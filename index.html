@@ -350,6 +350,61 @@
             );
         };
 
+        const LevelRoadmapModal = ({ isOpen, onClose, currentXp, currentLevel }) => {
+            if (!isOpen) return null;
+            // Generate levels 1-50
+            const levels = [];
+            for (let i = 1; i <= 50; i++) {
+                // Formula: Math.sqrt(xp / 25) + 1 = level  =>  (level-1)^2 * 25 = xp
+                const minXp = Math.pow(i - 1, 2) * 25;
+                let title = "Intern";
+                if (i >= 5) title = "Junior Dev";
+                if (i >= 15) title = "Mid-Level Dev";
+                if (i >= 30) title = "Senior Dev";
+                if (i >= 40) title = "Staff Engineer";
+                if (i >= 50) title = "Principal Architect";
+                levels.push({ level: i, minXp, title });
+            }
+
+            const getProgress = (lvl) => {
+                if (currentLevel > lvl.level) return 100;
+                if (currentLevel < lvl.level) return 0;
+                // Current level progress
+                const nextLvlXp = Math.pow(lvl.level, 2) * 25;
+                const prevLvlXp = Math.pow(lvl.level - 1, 2) * 25;
+                return Math.min(100, Math.max(0, ((currentXp - prevLvlXp) / (nextLvlXp - prevLvlXp)) * 100));
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-slate-100 dark:border-zinc-800 flex justify-between items-center bg-slate-50 dark:bg-zinc-800/50">
+                            <h2 className="font-bold text-slate-800 dark:text-white flex items-center gap-2"><Icons.Trophy className="text-yellow-500" /> Career Roadmap</h2>
+                            <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-400"><Icons.X size={18} /></button>
+                        </div>
+                        <div className="overflow-y-auto p-4 space-y-3">
+                            {levels.map(l => (
+                                <div key={l.level} className={`flex items-center gap-3 p-3 rounded-xl border ${l.level === currentLevel ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : l.level < currentLevel ? 'border-indigo-100 bg-white dark:bg-zinc-900 dark:border-zinc-800' : 'border-slate-100 dark:border-zinc-800 opacity-60'}`}>
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${l.level <= currentLevel ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-zinc-700 text-slate-500'}`}>{l.level}</div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className={`font-bold text-xs ${l.level === currentLevel ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'}`}>{l.title}</span>
+                                            <span className="text-[10px] font-mono text-slate-400">{l.minXp} XP</span>
+                                        </div>
+                                        <div className="w-full bg-slate-200 dark:bg-zinc-700 h-1.5 rounded-full overflow-hidden">
+                                            <div className="h-full bg-indigo-500 transition-all" style={{ width: `${getProgress(l)}%` }}></div>
+                                        </div>
+                                    </div>
+                                    {l.level === currentLevel && <Icons.Wrench size={14} className="text-indigo-500 animate-spin-slow" />}
+                                    {l.level < currentLevel && <Icons.CheckCircle size={14} className="text-indigo-400" />}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- MAIN APP ---
         function App() {
             const [view, setView] = useState('home');
@@ -563,15 +618,19 @@
                 }
             };
 
+            const [showRoadmap, setShowRoadmap] = useState(false);
+
             return (
                 <div className="flex flex-col h-screen bg-slate-50 dark:bg-zinc-950 relative">
+                    <LevelRoadmapModal isOpen={showRoadmap} onClose={() => setShowRoadmap(false)} currentXp={xp} currentLevel={level} />
+
                     <div className="p-6 bg-white dark:bg-zinc-950 border-b border-slate-200 dark:border-zinc-800">
                         <div className="flex justify-between items-center mb-4">
                             <div className="flex items-center gap-3">
                                 <img src="icon.png" className="w-8 h-8 rounded-lg shadow-sm" alt="Logo" />
-                                <div>
+                                <div className="cursor-pointer" onClick={() => setShowRoadmap(true)}>
                                     <h1 className="text-xl font-black text-slate-800 dark:text-white leading-none">Senior Swipe</h1>
-                                    <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-1">Lv.{level} Developer</div>
+                                    <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-1 flex items-center gap-1">Lv.{level} Developer <Icons.Wrench size={10} /></div>
                                 </div>
                             </div>
                             <div className="flex gap-2">
