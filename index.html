@@ -745,9 +745,6 @@
                     setIsFlipped(false);
                     if (isLast) finishSession();
                     else {
-                        // Mark as learnt if valid
-                        if (!history.includes(card.id)) setLearned([...learned, card.id]);
-
                         setIndex(index + 1);
                         setCardAnim('card-enter-right');
                         setTimeout(() => setCardAnim(''), 200);
