@@ -893,12 +893,44 @@
 
             const getCategoryCount = (cat) => cards.filter(c => c.category === cat).length;
 
-            const displayCategories = useMemo(() => {
+            const getPhase = (cat) => {
+                const sampleCard = cards.find(c => c.category === cat);
+                if (!sampleCard) return 'Additional Topics';
+                const id = parseInt(sampleCard.id);
+
+                if ((id >= 2000 && id < 3000) || (id >= 5000 && id < 6000) || (id >= 6000 && id < 7000) || (id >= 7000 && id < 8000)) return 'Phase 1: The "Must Know"';
+                if ((id >= 12000 && id < 13000) || (id >= 14000 && id < 15000) || (id >= 27000 && id < 28000)) return 'Phase 2: The "Senior Badge"';
+                if ((id >= 24000 && id < 25000) || (id >= 25000 && id < 26000) || (id >= 37000 && id < 38000)) return 'Phase 3: The "Production Ready"';
+                if ((id >= 1000 && id < 2000) || (id >= 38000) || cat.includes('Algorithm')) return 'Phase 4: The "Extra Mile"';
+                return 'Additional Topics';
+            };
+
+            const phasedCategories = useMemo(() => {
+                const groups = {
+                    'Phase 1: The "Must Know"': [],
+                    'Phase 2: The "Senior Badge"': [],
+                    'Phase 3: The "Production Ready"': [],
+                    'Phase 4: The "Extra Mile"': [],
+                    'Additional Topics': []
+                };
+
                 let sorted = [...categories];
-                if (catSort === 'count_desc') return sorted.sort((a, b) => getCategoryCount(b) - getCategoryCount(a));
-                if (catSort === 'count_asc') return sorted.sort((a, b) => getCategoryCount(a) - getCategoryCount(b));
-                return sorted;
-            }, [categories, catSort]);
+
+                sorted.forEach(cat => {
+                    const phase = getPhase(cat);
+                    if (groups[phase]) groups[phase].push(cat);
+                    else groups['Additional Topics'].push(cat);
+                });
+
+                // Sort within groups
+                Object.keys(groups).forEach(key => {
+                    if (catSort === 'count_desc') groups[key].sort((a, b) => getCategoryCount(b) - getCategoryCount(a));
+                    else if (catSort === 'count_asc') groups[key].sort((a, b) => getCategoryCount(a) - getCategoryCount(b));
+                    else groups[key].sort();
+                });
+
+                return groups;
+            }, [categories, catSort, cards]);
 
             const toggleCatSort = () => {
                 if (catSort === 'default') setCatSort('count_desc');
@@ -916,17 +948,7 @@
             };
 
             const handleStartSession = () => {
-                if (selectedCats.length === 0) {
-                    // If nothing selected, maybe select all? Or show error.
-                    // Making "Select None" = "Start All" is a valid pattern, 
-                    // but floating button usually implies explicit selection.
-                    // The user asked for "multiselect from it".
-                    // Let's assume if they click the FAB, they want to start with selected.
-                    // If FAB is only shown when selected > 0, we are good.
-                    onStart(selectedCats, 'study');
-                } else {
-                    onStart(selectedCats, 'study');
-                }
+                onStart(selectedCats, 'study');
             };
 
             const [showRoadmap, setShowRoadmap] = useState(false);
@@ -970,33 +992,42 @@
                         </div>
                     </div>
 
-                    <div className="pt-4">
+                    <div className="pt-4 pb-24">
                         <div className="px-6 flex justify-between items-center mb-4">
                             <h2 className="font-bold text-slate-700 dark:text-zinc-500 text-sm uppercase tracking-wide">Browse Categories</h2>
                             <button onClick={() => setShowCreator(true)} className="text-xs font-bold text-indigo-600">+ New Card</button>
                         </div>
-                        <div className="grid grid-cols-2 gap-3 px-6">
-                            {displayCategories.map(cat => {
-                                const isSelected = selectedCats.includes(cat);
-                                const count = getCategoryCount(cat);
-                                return (
-                                    <div key={cat} onClick={() => toggleCategorySelect(cat)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-500' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-indigo-300 dark:hover:border-indigo-700'}`}>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className={`w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center ${isSelected ? 'bg-indigo-600 border-indigo-600' : ''}`}>
-                                                {isSelected && <Icons.CheckCircle size={12} className="text-white" />}
-                                            </div>
-                                            <span className="text-[10px] font-bold text-slate-400">{count}</span>
-                                        </div>
-                                        <h3 className="font-bold text-slate-800 dark:text-white text-sm line-clamp-2 mb-2">{cat}</h3>
-                                        <div className="flex flex-wrap gap-1">
-                                            {[...new Set(cards.filter(c => c.category === cat).map(c => c.difficulty))].map(diff => (
-                                                <span key={diff} className={`text-[9px] px-1.5 py-0.5 rounded-[4px] font-bold tracking-wider uppercase ${diff === 'Senior' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : diff === 'Principal' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-green-100 text-green-600'}`}>{diff}</span>
-                                            ))}
-                                        </div>
+                        {Object.entries(phasedCategories).map(([phaseName, phaseCats]) => (
+                            phaseCats.length > 0 && (
+                                <div key={phaseName} className="mb-6">
+                                    <div className="px-6 flex justify-between items-center mb-3">
+                                        <h2 className="font-bold text-indigo-500 dark:text-indigo-400 text-[10px] uppercase tracking-wider">{phaseName}</h2>
                                     </div>
-                                );
-                            })}
-                        </div>
+                                    <div className="grid grid-cols-2 gap-3 px-6">
+                                        {phaseCats.map(cat => {
+                                            const isSelected = selectedCats.includes(cat);
+                                            const count = getCategoryCount(cat);
+                                            return (
+                                                <div key={cat} onClick={() => toggleCategorySelect(cat)} className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-500' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-indigo-300 dark:hover:border-indigo-700'}`}>
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div className={`w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center ${isSelected ? 'bg-indigo-600 border-indigo-600' : ''}`}>
+                                                            {isSelected && <Icons.CheckCircle size={12} className="text-white" />}
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-slate-400">{count}</span>
+                                                    </div>
+                                                    <h3 className="font-bold text-slate-800 dark:text-white text-sm line-clamp-2 mb-2">{cat}</h3>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {[...new Set(cards.filter(c => c.category === cat).map(c => c.difficulty))].map(diff => (
+                                                            <span key={diff} className={`text-[9px] px-1.5 py-0.5 rounded-[4px] font-bold tracking-wider uppercase ${diff === 'Senior' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : diff === 'Principal' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-green-100 text-green-600'}`}>{diff}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )
+                        ))}
                     </div>
 
                     {/* Floating Action Button */}
