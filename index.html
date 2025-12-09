@@ -218,6 +218,8 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
+        const SRS = { AGAIN: 0, HARD: 1, GOOD: 2, EASY: 3 };
+
         // --- COMPONENTS ---
         const Markdown = ({ content }) => {
             useEffect(() => {
@@ -254,7 +256,10 @@
             Wrench: (p) => <Icon {...p} path={<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />} />,
             Play: (p) => <Icon {...p} path={<polygon points="5 3 19 12 5 21 5 3" />} />,
             Trophy: (p) => <Icon {...p} path={<><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></>} />,
-            Filter: (p) => <Icon {...p} path={<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />} />
+            Filter: (p) => <Icon {...p} path={<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />} />,
+            Mic: (p) => <Icon {...p} path={<><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="23" /><line x1="8" x2="16" y1="23" y2="23" /></>} />,
+            Headphones: (p) => <Icon {...p} path={<><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" /></>} />,
+            Stop: (p) => <Icon {...p} path={<rect x="6" y="6" width="12" height="12" rx="2" />} />
         };
 
         const SimpleConfetti = () => {
@@ -375,6 +380,7 @@
                 return Math.min(100, Math.max(0, ((currentXp - prevLvlXp) / (nextLvlXp - prevLvlXp)) * 100));
             };
 
+
             return (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
@@ -405,6 +411,145 @@
             );
         };
 
+        const CardCreatorView = ({ onClose, onSave, categories }) => {
+            const [form, setForm] = useState({ title: '', category: categories[0] || 'General', difficulty: 'Senior', content: '', explanation: '' });
+
+            const handleSubmit = () => {
+                if (!form.title || !form.content) return alert("Title and Content are required.");
+                onSave({ ...form, id: Date.now().toString() }); // Simple ID
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex justify-center items-end sm:items-center bg-black/50 backdrop-blur-sm animate-pop">
+                    <div className="w-full max-w-md h-full sm:h-[90vh] bg-white dark:bg-zinc-950 flex flex-col shadow-2xl overflow-hidden sm:rounded-2xl">
+                        <div className="p-4 border-b border-slate-100 dark:border-zinc-800 flex justify-between items-center">
+                            <button onClick={onClose} className="text-slate-500 font-bold">Cancel</button>
+                            <h2 className="font-bold text-lg">New Card</h2>
+                            <button onClick={handleSubmit} className="text-indigo-600 font-bold">Save</button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Title</label>
+                                <input type="text" className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl" placeholder="e.g. Rate Limiting" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Category</label>
+                                    <select className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                        <option value="User Added">User Added</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Difficulty</label>
+                                    <select className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl" value={form.difficulty} onChange={e => setForm({ ...form, difficulty: e.target.value })}>
+                                        <option value="Junior">Junior</option>
+                                        <option value="Senior">Senior</option>
+                                        <option value="Principal">Principal</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Question (Markdown)</label>
+                                <textarea className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl h-32 font-mono text-sm" placeholder="# Question..." value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Explanation (Markdown)</label>
+                                <textarea className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl h-32 font-mono text-sm" placeholder="The answer is..." value={form.explanation} onChange={e => setForm({ ...form, explanation: e.target.value })} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SettingsModal = ({ isOpen, onClose, onExport, onImport, currentTheme, onThemeChange }) => {
+            if (!isOpen) return null;
+            const themes = [
+                { id: 'prism-tomorrow', name: 'Tomorrow Night' },
+                { id: 'prism-dracula', name: 'Dracula' }, // Requires correct URL
+                { id: 'prism-solarizedlight', name: 'Solarized Light' },
+                { id: 'prism-okaidia', name: 'Okaidia' }
+            ];
+
+            return (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
+                    <div className="bg-white dark:bg-zinc-900 w-full max-w-sm rounded-2xl p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-lg font-bold mb-6 text-slate-800 dark:text-white">Settings</h3>
+
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Code Theme</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {themes.map(t => (
+                                        <button key={t.id} onClick={() => onThemeChange(t.id)} className={`p-2 rounded-lg text-xs font-bold border ${currentTheme === t.id ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'border-slate-200 dark:border-zinc-800 text-slate-500'}`}>
+                                            {t.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-slate-100 dark:border-zinc-800">
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Data Management</label>
+                                <div className="flex gap-2">
+                                    <button onClick={onExport} className="flex-1 p-3 bg-slate-100 dark:bg-zinc-800 rounded-xl text-sm font-bold text-slate-600 dark:text-zinc-300">Backup Data</button>
+                                    <label className="flex-1 cursor-pointer p-3 bg-indigo-600 rounded-xl text-sm font-bold text-white text-center hover:bg-indigo-700">
+                                        Restore Data
+                                        <input type="file" className="hidden" accept=".json" onChange={onImport} />
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={onClose} className="w-full mt-6 py-3 text-slate-400 font-bold hover:text-slate-600">Close</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const RadarChart = ({ data, size = 200 }) => {
+            const center = size / 2;
+            const radius = (size / 2) - 20;
+            const angleSlice = (Math.PI * 2) / data.length;
+
+            // Coordinates
+            const points = data.map((d, i) => {
+                const r = (d.value / 100) * radius;
+                const angle = i * angleSlice - Math.PI / 2;
+                return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
+            }).join(' ');
+
+            // Axis lines
+            const axes = data.map((d, i) => {
+                const angle = i * angleSlice - Math.PI / 2;
+                return (
+                    <line key={i} x1={center} y1={center} x2={center + radius * Math.cos(angle)} y2={center + radius * Math.sin(angle)} stroke="currentColor" strokeOpacity="0.2" />
+                );
+            });
+
+            // Labels
+            const labels = data.map((d, i) => {
+                const angle = i * angleSlice - Math.PI / 2;
+                const r = radius + 15;
+                const x = center + r * Math.cos(angle);
+                const y = center + r * Math.sin(angle);
+                return (
+                    <text key={i} x={x} y={y} fontSize="9" textAnchor="middle" alignmentBaseline="middle" fill="currentColor" className="uppercase font-bold tracking-wider opacity-60">
+                        {d.label}
+                    </text>
+                );
+            });
+
+            return (
+                <svg width={size} height={size} className="text-slate-400 dark:text-zinc-500">
+                    <circle cx={center} cy={center} r={radius} fill="none" stroke="currentColor" strokeOpacity="0.1" />
+                    <circle cx={center} cy={center} r={radius * 0.5} fill="none" stroke="currentColor" strokeOpacity="0.1" />
+                    {axes}
+                    <polygon points={points} fill="rgba(99, 102, 241, 0.2)" stroke="#6366f1" strokeWidth="2" />
+                    {labels}
+                </svg>
+            );
+        };
+
         // --- MAIN APP ---
         function App() {
             const [view, setView] = useState('home');
@@ -417,6 +562,12 @@
             const [toast, setToast] = useState(null);
 
             const [xp, setXp] = useState(() => parseInt(localStorage.getItem('ss_xp')) || 0);
+            const [notes, setNotes] = useState({});
+            const [srsData, setSrsData] = useState({});
+            const [customCards, setCustomCards] = useState([]);
+            const [showSettings, setShowSettings] = useState(false);
+            const [showCreator, setShowCreator] = useState(false);
+            const [theme, setTheme] = useState('prism-tomorrow');
 
             // Leveling Logic
             const level = Math.floor(Math.sqrt(xp / 25)) + 1;
@@ -438,8 +589,11 @@
 
             useEffect(() => {
                 // 1. Load Data
+                // 1. Load Data
                 const externalData = (typeof SEED_DATA !== 'undefined') ? SEED_DATA : [];
-                setCards(externalData);
+                const savedCustom = JSON.parse(localStorage.getItem('ss_custom_cards') || '[]');
+                setCustomCards(savedCustom);
+                setCards([...externalData, ...savedCustom]);
 
                 // 2. Load Persisted State
                 const h = localStorage.getItem('ss_history');
@@ -452,6 +606,13 @@
                 if (b) setBookmarks(JSON.parse(b));
                 if (w) setWrongQueue(JSON.parse(w));
                 if (s) setStreak(JSON.parse(s));
+
+                // Load SRS Data
+                const srs = localStorage.getItem('ss_srs_data');
+                if (srs) setSrsData(JSON.parse(srs));
+
+                const n = localStorage.getItem('ss_notes');
+                if (n) setNotes(JSON.parse(n));
 
                 // Dark Mode Init
                 if (d === 'true') {
@@ -466,6 +627,12 @@
                 if (newVal) document.documentElement.classList.add('dark');
                 else document.documentElement.classList.remove('dark');
                 localStorage.setItem('ss_dark', newVal);
+            };
+
+            const updateNotes = (cardId, text) => {
+                const newNotes = { ...notes, [cardId]: text };
+                setNotes(newNotes);
+                localStorage.setItem('ss_notes', JSON.stringify(newNotes));
             };
 
             const updateHistory = (newHist) => { setHistory(newHist); localStorage.setItem('ss_history', JSON.stringify(newHist)); };
@@ -489,10 +656,124 @@
                 localStorage.setItem('ss_streak', JSON.stringify(newStreak));
             };
 
+            // SRS Logic (Correctly scoped)
+            const handleSrsReview = (id, rating) => {
+                const NOW = Date.now();
+                const existing = srsData[id] || { interval: 0, ease: 2.5, streak: 0 };
+                let { interval, ease, street } = existing;
+                let streak = existing.streak || 0;
+
+                // Rating: 0=Again, 1=Hard, 2=Good, 3=Easy
+                if (rating === SRS.AGAIN) {
+                    streak = 0;
+                    interval = 0; // 1 min
+                } else if (rating === SRS.HARD) {
+                    streak = 0;
+                    interval = 0.5; // 12 hours
+                } else if (rating === SRS.GOOD) {
+                    streak++;
+                    interval = streak === 1 ? 1 : interval * ease;
+                } else if (rating === SRS.EASY) {
+                    streak++;
+                    ease += 0.15;
+                    interval = streak === 1 ? 4 : interval * ease * 1.3;
+                }
+
+                if (ease < 1.3) ease = 1.3;
+
+                // Calc Next Review (interval in days)
+                let nextReview = NOW + (interval * 24 * 60 * 60 * 1000);
+                if (interval === 0) nextReview = NOW + (60 * 1000); // 1 min
+
+                const newData = { ...srsData, [id]: { interval, ease, streak, nextReview } };
+                setSrsData(newData);
+                localStorage.setItem('ss_srs_data', JSON.stringify(newData));
+
+                // Legacy Sync
+                if (rating >= SRS.GOOD) {
+                    if (!history.includes(id)) updateHistory([...history, id]);
+                    if (wrongQueue.includes(id)) updateWrongQueue(wrongQueue.filter(x => x !== id));
+                } else {
+                    if (!wrongQueue.includes(id)) updateWrongQueue([...wrongQueue, id]);
+                }
+            };
+
+
+
             const toggleBookmark = (id) => {
                 if (bookmarks.includes(id)) updateBookmarks(bookmarks.filter(b => b !== id));
                 else updateBookmarks([...bookmarks, id]);
             };
+
+            const addCustomCard = (card) => {
+                const newCustom = [...customCards, card];
+                setCustomCards(newCustom);
+                setCards([...cards, card]);
+                localStorage.setItem('ss_custom_cards', JSON.stringify(newCustom));
+                setShowCreator(false);
+                showToast("Card Created!");
+            };
+
+            const exportData = () => {
+                const data = { history, bookmarks, xp, streak, customCards, srsData, wrongQueue };
+                const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `senior_swipe_backup_${new Date().toISOString().slice(0, 10)}.json`;
+                link.click();
+            };
+
+            const importData = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const data = JSON.parse(ev.target.result);
+                        if (data.history) updateHistory(data.history);
+                        if (data.bookmarks) updateBookmarks(data.bookmarks);
+                        if (data.xp) { setXp(data.xp); localStorage.setItem('ss_xp', data.xp); }
+                        if (data.streak) { setStreak(data.streak); localStorage.setItem('ss_streak', JSON.stringify(data.streak)); }
+                        if (data.customCards) {
+                            setCustomCards(data.customCards);
+                            localStorage.setItem('ss_custom_cards', JSON.stringify(data.customCards));
+                            setCards([...cards, ...data.customCards]); // Note: This might duplicate if existing cards are not cleared, but SEED_DATA is constant.
+                            setTimeout(() => window.location.reload(), 500);
+                        }
+                        if (data.srsData) { setSrsData(data.srsData); localStorage.setItem('ss_srs_data', JSON.stringify(data.srsData)); }
+                        if (data.wrongQueue) updateWrongQueue(data.wrongQueue);
+                        showToast("Data Restored!");
+                        setShowSettings(false);
+                    } catch (err) {
+                        showToast("Invalid JSON file");
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            const handleThemeChange = (newTheme) => {
+                setTheme(newTheme);
+                let link = document.getElementById('prism-theme-link');
+                if (!link) {
+                    link = document.createElement('link');
+                    link.id = 'prism-theme-link';
+                    link.rel = 'stylesheet';
+                    document.head.appendChild(link);
+                }
+
+                // Maps
+                if (newTheme === 'prism-tomorrow') link.href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css";
+                if (newTheme === 'prism-dracula') link.href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-dracula.min.css";
+                if (newTheme === 'prism-solarizedlight') link.href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-solarizedlight.min.css";
+                if (newTheme === 'prism-okaidia') link.href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css";
+
+                localStorage.setItem('ss_theme', newTheme);
+            };
+
+            useEffect(() => {
+                const t = localStorage.getItem('ss_theme');
+                if (t) handleThemeChange(t);
+            }, []);
 
             const textToId = (text) => {
                 // Simple hash to get ID from text if real ID missing
@@ -527,8 +808,16 @@
                     // Smart Shuffle
                     finalDeck = pool.map(c => {
                         let weight = 1;
-                        if (wrongQueue.includes(c.id)) weight = 5;
-                        else if (!history.includes(c.id)) weight = 3;
+                        // SRS Weighting
+                        const srs = srsData[c.id];
+                        if (srs) {
+                            if (Date.now() > srs.nextReview) weight = 10; // Due for review
+                            else weight = 0.1; // Not due
+                        } else {
+                            // New card
+                            if (wrongQueue.includes(c.id)) weight = 5;
+                            else if (!history.includes(c.id)) weight = 3;
+                        }
                         return { card: c, sort: Math.random() * weight };
                     }).sort((a, b) => b.sort - a.sort).map(wp => wp.card);
                 }
@@ -549,25 +838,47 @@
 
             const renderView = () => {
                 switch (view) {
-                    case 'home': return <HomeView cards={cards} history={history} bookmarks={bookmarks} streak={streak} wrongQueue={wrongQueue} darkMode={darkMode} toggleDarkMode={toggleDarkMode} onStart={startSession} onNav={setView} xp={xp} level={level} levelProgress={levelProgress} />;
+                    case 'home': return <HomeView cards={cards} history={history} bookmarks={bookmarks} streak={streak} wrongQueue={wrongQueue} darkMode={darkMode} toggleDarkMode={toggleDarkMode} onStart={startSession} onNav={setView} xp={xp} level={level} levelProgress={levelProgress} setShowSettings={setShowSettings} setShowCreator={setShowCreator} srsData={srsData} updateStreak={updateStreak} />;
                     case 'browser': return <BrowserView cards={cards} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onNav={setView} />;
-                    case 'play': return <PlayView deck={activeDeck} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onFinish={handleSessionComplete} onNav={setView} history={history} showToast={showToast} addXp={addXp} />;
+                    case 'play': return <PlayView deck={activeDeck} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onFinish={handleSessionComplete} onNav={setView} history={history} showToast={showToast} addXp={addXp} onSrsReview={handleSrsReview} notes={notes} onUpdateNote={updateNotes} />;
                     default: return <HomeView />;
                 }
             };
 
             return (
                 <div className="max-w-md mx-auto min-h-screen bg-white dark:bg-zinc-950 shadow-2xl overflow-hidden relative font-sans text-slate-800 dark:text-zinc-200">
+                    <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} onExport={exportData} onImport={importData} currentTheme={theme} onThemeChange={handleThemeChange} />
+                    {showCreator && <CardCreatorView categories={[...new Set(cards.map(c => c.category))]} onClose={() => setShowCreator(false)} onSave={addCustomCard} />}
+
                     {renderView()}
                     {toast && <Toast message={toast} />}
                 </div>
             );
         }
 
-        const HomeView = ({ cards, history, bookmarks, streak, wrongQueue, darkMode, toggleDarkMode, onStart, onNav, xp, level, levelProgress }) => {
-            // Keep natural order from data.js (remove .sort())
-            const categories = [...new Set(cards.map(c => c.category))];
-            const mastery = cards.length ? Math.round((history.length / cards.length) * 100) : 0;
+        const HomeView = ({ cards, history, bookmarks, streak, wrongQueue, darkMode, toggleDarkMode, onStart, onNav, xp, level, levelProgress, setShowSettings, setShowCreator, srsData, updateStreak }) => {
+            // Derive categories from cards
+            const categories = useMemo(() => [...new Set(cards.map(c => c.category))], [cards]);
+
+            // Calculate overall mastery
+            const mastery = useMemo(() => {
+                if (!cards.length) return 0;
+                return (history.length / cards.length) * 100;
+            }, [cards, history]);
+
+
+            // Radar Data
+            const radarData = useMemo(() => {
+                const cats = categories.slice(0, 6); // Use actual top 6 categories
+                return cats.map(cat => {
+                    const catCards = cards.filter(c => c.category === cat);
+                    if (!catCards.length) return { label: cat, value: 0 };
+                    const learned = catCards.filter(c => history.includes(c.id)).length;
+                    // Boost value if SRS says "easy"
+                    const mastery = (learned / catCards.length) * 100;
+                    return { label: cat, value: mastery || 10 }; // Min 10 for visibility
+                });
+            }, [cards, history]);
 
             // Heatmap Data (Last 7 days)
             const dates = [];
@@ -621,7 +932,7 @@
             const [showRoadmap, setShowRoadmap] = useState(false);
 
             return (
-                <div className="flex flex-col h-screen bg-slate-50 dark:bg-zinc-950 relative">
+                <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 relative pb-32">
                     <LevelRoadmapModal isOpen={showRoadmap} onClose={() => setShowRoadmap(false)} currentXp={xp} currentLevel={level} />
 
                     <div className="p-6 bg-white dark:bg-zinc-950 border-b border-slate-200 dark:border-zinc-800">
@@ -635,6 +946,7 @@
                             </div>
                             <div className="flex gap-2">
                                 <button onClick={toggleDarkMode} className="p-2 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 rounded-full">{darkMode ? <Icons.Sun /> : <Icons.Moon />}</button>
+                                <button onClick={() => updateStreak() || setShowSettings(true)} className="p-2 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 rounded-full"><Icons.Wrench /></button> {/* Settings shortcut */}
                                 <button onClick={() => onNav('browser')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full"><Icons.Search /></button>
                             </div>
                         </div>
@@ -652,18 +964,18 @@
                                 <div className="flex-1 bg-zinc-800 rounded-lg p-2 text-center clickable" onClick={() => onStart('Bookmarks', 'study')}><div className="text-xl font-bold text-yellow-400">{bookmarks.length}</div><div className="text-[10px] uppercase tracking-wider text-slate-400">Bookmarks</div></div>
                                 <div className="flex-1 bg-zinc-800 rounded-lg p-2 text-center" onClick={() => onStart('Mistakes', 'study')}><div className="text-xl font-bold text-red-400">{wrongQueue.length}</div><div className="text-[10px] uppercase tracking-wider text-slate-400">Mistakes</div></div>
                             </div>
+                            <div className="flex justify-center mt-6">
+                                <RadarChart data={radarData} size={220} />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 pb-24">
-                        <div className="flex justify-between items-center mb-4">
+                    <div className="pt-4">
+                        <div className="px-6 flex justify-between items-center mb-4">
                             <h2 className="font-bold text-slate-700 dark:text-zinc-500 text-sm uppercase tracking-wide">Browse Categories</h2>
-                            <button onClick={toggleCatSort} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all ${catSort !== 'default' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-400' : 'bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400'}`}>
-                                <Icons.Filter size={14} className={catSort === 'count_asc' ? 'rotate-180' : ''} />
-                                {catSort === 'default' ? 'Natural' : catSort === 'count_desc' ? 'Most Qs' : 'Fewest Qs'}
-                            </button>
+                            <button onClick={() => setShowCreator(true)} className="text-xs font-bold text-indigo-600">+ New Card</button>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-3 px-6">
                             {displayCategories.map(cat => {
                                 const isSelected = selectedCats.includes(cat);
                                 const count = getCategoryCount(cat);
@@ -778,15 +1090,187 @@
             );
         };
 
-        const PlayView = ({ deck, bookmarks, onToggleBookmark, onFinish, onNav, history, showToast, addXp }) => {
+        const PlayView = ({ deck, bookmarks, onToggleBookmark, onFinish, onNav, history, showToast, addXp, onSrsReview, notes, onUpdateNote }) => {
             const [index, setIndex] = useState(0);
             const [isFlipped, setIsFlipped] = useState(false);
             const [localLearned, setLocalLearned] = useState([]);
             const [showConfetti, setShowConfetti] = useState(false);
 
+            // Modes
+            const [commuterMode, setCommuterMode] = useState(false);
+            const [interviewMode, setInterviewMode] = useState(false);
+
+            // Interview State
+            const [timer, setTimer] = useState(120);
+            const [isRecording, setIsRecording] = useState(false);
+            const [audioUrl, setAudioUrl] = useState(null);
+            const mediaRecorder = useRef(null);
+            const audioChunks = useRef([]);
+
+            // Commuter State
+            const synth = window.speechSynthesis;
+            const uttr = useRef(new SpeechSynthesisUtterance());
+
+            // Commuter Logic
+            useEffect(() => {
+                if (!commuterMode) {
+                    synth.cancel();
+                    return;
+                }
+
+                // Sequence: Read Q -> Wait 5s -> Read A -> Wait 2s -> Next
+                const readCard = () => {
+                    if (!card) return;
+
+                    // Step 1: Read Question
+                    uttr.current.text = `Question. ${card.title}. ${card.content}`;
+                    uttr.current.onend = () => {
+                        // Step 2: Wait 5s
+                        setTimeout(() => {
+                            if (!commuterMode) return;
+                            // Step 3: Flip & Read Answer
+                            setIsFlipped(true);
+                            uttr.current.text = `Answer. ${card.explanation}`;
+                            uttr.current.onend = () => {
+                                // Step 4: Next Card
+                                setTimeout(() => {
+                                    if (!commuterMode) return;
+                                    handleSrs(2); // Auto-mark "Good"
+                                }, 2000);
+                            };
+                            synth.speak(uttr.current);
+                        }, 5000);
+                    };
+                    synth.speak(uttr.current);
+                };
+
+                readCard();
+
+                return () => synth.cancel();
+            }, [commuterMode, index]); // effect runs when index changes to read next card
+
+            // Interview Timer
+            useEffect(() => {
+                let interval;
+                if (interviewMode && !isFlipped && timer > 0) {
+                    interval = setInterval(() => setTimer(t => t - 1), 1000);
+                }
+                return () => clearInterval(interval);
+            }, [interviewMode, isFlipped, timer]);
+
+            // Audio Recording
+            const toggleRecording = async () => {
+                if (isRecording) {
+                    mediaRecorder.current.stop();
+                    setIsRecording(false);
+                } else {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        mediaRecorder.current = new MediaRecorder(stream);
+                        audioChunks.current = [];
+
+                        mediaRecorder.current.ondataavailable = (e) => audioChunks.current.push(e.data);
+                        mediaRecorder.current.onstop = () => {
+                            const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
+                            setAudioUrl(URL.createObjectURL(blob));
+                        };
+
+                        mediaRecorder.current.start();
+                        setIsRecording(true);
+                    } catch (e) {
+                        showToast("Microphone access denied");
+                    }
+                }
+            };
+
             const card = deck[index] || {};
             const isLast = index === deck.length - 1;
             const hasLearned = history.includes(card?.id) || localLearned.includes(card?.id);
+
+            // --- TOUCH / SWIPE LOGIC ---
+            const [touchStart, setTouchStart] = useState(null);
+            const [touchEnd, setTouchEnd] = useState(null);
+            const [swipeOffset, setSwipeOffset] = useState(0);
+
+            const minSwipeDistance = 100;
+
+            const onTouchStart = (e) => {
+                setTouchEnd(null);
+                setTouchStart(e.targetTouches[0].clientX);
+            };
+
+            const onTouchMove = (e) => {
+                setTouchEnd(e.targetTouches[0].clientX);
+                if (touchStart) {
+                    const current = e.targetTouches[0].clientX;
+                    setSwipeOffset(current - touchStart);
+                }
+            };
+
+            const onTouchEnd = () => {
+                if (!touchStart || !touchEnd) return;
+                const distance = touchStart - touchEnd;
+                const isLeftSwipe = distance > minSwipeDistance;
+                const isRightSwipe = distance < -minSwipeDistance;
+
+                if (isLeftSwipe) {
+                    // Swipe Left (Hard/Next)
+                    handleSwipeAction('left');
+                } else if (isRightSwipe) {
+                    // Swipe Right (Easy/Learned)
+                    handleSwipeAction('right');
+                } else {
+                    // Reset
+                    setSwipeOffset(0);
+                }
+                setTouchStart(null);
+                setTouchEnd(null);
+            };
+
+            const handleSwipeAction = (dir) => {
+                if (dir === 'left') {
+                    // Hard / Review Later
+                    handleSrs(1); // Hard
+                } else {
+                    // Easy / Learned
+                    handleSrs(3); // Easy
+                }
+            };
+
+            const handleSrs = (rating) => {
+                // 0=Again, 1=Hard, 2=Good, 3=Easy
+                if (onSrsReview) onSrsReview(card.id, rating);
+
+                // Animation & Next
+                const dir = rating >= 2 ? 'right' : 'left';
+                triggerAnim(dir === 'right' ? 'next' : 'prev');
+                setCardAnim(dir === 'right' ? 'card-exit-right' : 'card-exit-left'); // Swipe right exits right, left exits left
+
+                addXp(rating >= 2 ? 10 : 2);
+                showToast(rating >= 2 ? "Learned! +10 XP" : "Reviewing later");
+
+                setTimeout(() => {
+                    setIsFlipped(false);
+                    setSwipeOffset(0);
+                    if (isLast) finishSession();
+                    else {
+                        setIndex(index + 1);
+                        setCardAnim('card-enter-bottom'); // New card comes from bottom or side
+                        setTimeout(() => setCardAnim(''), 200);
+                    }
+                }, 200);
+            };
+
+            // Allow keyboard shortcuts too?
+            useEffect(() => {
+                const handleKey = (e) => {
+                    if (e.key === 'ArrowRight') handleSrs(3);
+                    if (e.key === 'ArrowLeft') handleSrs(1);
+                    if (e.key === ' ') setIsFlipped(p => !p);
+                };
+                window.addEventListener('keydown', handleKey);
+                return () => window.removeEventListener('keydown', handleKey);
+            }, [index, isFlipped]);
 
             const finishSession = () => {
                 setShowConfetti(true);
@@ -851,6 +1335,14 @@
 
             if (!card) return null;
 
+            // Rotation with swipe
+            const swipeRotation = swipeOffset / 20; // 200px -> 10deg
+            const swipeOpacity = Math.max(0, 1 - Math.abs(swipeOffset) / 500);
+            const style = {
+                transform: `translateX(${swipeOffset}px) rotate(${swipeRotation}deg) ${isFlipped ? 'rotateY(180deg)' : ''}`,
+                opacity: isFlipped ? 1 : Math.min(1, Math.max(0.5, 1 - Math.abs(swipeOffset) / 1000))
+            };
+
             return (
                 <div className="h-screen bg-slate-100 dark:bg-zinc-950 flex flex-col relative overflow-hidden">
                     {showConfetti && <SimpleConfetti />}
@@ -858,48 +1350,93 @@
                     <div className="p-4 flex justify-between items-center z-10">
                         <button onClick={() => onNav('home')} className="text-slate-400 p-2"><Icons.X /></button>
                         <div className="text-xs font-bold text-slate-400 bg-white dark:bg-zinc-900 px-3 py-1 rounded-full shadow-sm">
-                            {index + 1} / {deck.length}
+                            {interviewMode ? <span className={`text-${timer < 30 ? 'red' : 'indigo'}-500`}>{Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}</span> : `${index + 1} / ${deck.length}`}
                         </div>
-                        <button onClick={() => onToggleBookmark(card.id)} className={bookmarks.includes(card.id) ? "text-yellow-400 p-2" : "text-slate-300 dark:text-zinc-600 p-2"}><Icons.Bookmark fill={bookmarks.includes(card.id) ? "currentColor" : "none"} /></button>
-                    </div>
-
-                    {/* Card Container */}
-                    <div className="flex-1 flex items-center justify-center p-6 perspective-1000">
-                        <div className={`relative w-full max-w-sm h-[60vh] transition-all duration-500 transform-style-3d preserve-3d cursor-pointer ${isFlipped ? 'rotate-y-180' : ''} ${cardAnim}`} onClick={() => setIsFlipped(!isFlipped)}>
-
-                            {/* FRONT */}
-                            <div className="absolute inset-0 backface-hidden bg-white dark:bg-zinc-900 rounded-3xl shadow-xl border border-slate-200 dark:border-zinc-800 flex flex-col overflow-hidden">
-                                <div className="bg-slate-50 dark:bg-zinc-800/50 p-6 border-b border-slate-100 dark:border-zinc-800 text-center select-none">
-                                    <span className="text-[10px] px-2 py-1 rounded-full font-bold tracking-wider uppercase bg-slate-200 text-slate-600 dark:bg-zinc-700 dark:text-zinc-300 mr-2">{card.category}</span>
-                                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold tracking-wider uppercase ${card.difficulty === 'Senior' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : card.difficulty === 'Principal' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-green-100 text-green-600'}`}>{card.difficulty || 'General'}</span>
-                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mt-3">{card.title}</h3>
-                                </div>
-                                <div className="flex-1 p-6 flex items-center justify-center overflow-y-auto"><div className="w-full text-sm text-slate-700 dark:text-zinc-300 leading-relaxed"><Markdown content={card.content} /></div></div>
-                                <div className="p-4 text-center text-xs text-slate-300 dark:text-zinc-600 font-bold uppercase tracking-widest animate-pulse">Tap to Flip</div>
-                            </div>
-
-                            {/* BACK */}
-                            <div className="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-50 dark:bg-zinc-900 rounded-3xl shadow-xl border-2 border-indigo-100 dark:border-indigo-900/50 flex flex-col overflow-hidden">
-                                <div className="bg-indigo-100 dark:bg-indigo-900/20 p-4 border-b border-indigo-200 dark:border-indigo-900/50 flex justify-between items-center">
-                                    <h3 className="text-sm font-bold text-indigo-800 dark:text-indigo-300 uppercase tracking-widest">Explanation</h3>
-                                    <button onClick={toggleLearned} className={`p-1 rounded-full border ${hasLearned ? 'bg-green-500 text-white border-green-500' : 'bg-white dark:bg-zinc-800 text-slate-300 dark:text-zinc-500 border-slate-300 dark:border-zinc-700'}`} title="Mark as Learned"><Icons.CheckCircle size={16} /></button>
-                                </div>
-                                <div className="flex-1 p-6 overflow-y-auto bg-white dark:bg-zinc-900/50"><div className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap"><Markdown content={card.explanation} /></div></div>
-                                <div className="p-2 flex justify-center gap-4 bg-indigo-50 dark:bg-indigo-900/10">
-                                    <button onClick={copyPrompt} className="p-2 text-indigo-400 hover:text-indigo-600 flex items-center gap-2 text-xs font-bold uppercase tracking-wide"><Icons.Robot size={18} /> Ask AI</button>
-                                </div>
-                            </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => { setCommuterMode(!commuterMode); setInterviewMode(false); }} className={`p-2 rounded-full ${commuterMode ? 'bg-indigo-600 text-white' : 'text-slate-300 dark:text-zinc-600'}`}><Icons.Headphones size={20} /></button>
+                            <button onClick={() => { setInterviewMode(!interviewMode); setCommuterMode(false); setTimer(120); }} className={`p-2 rounded-full ${interviewMode ? 'bg-indigo-600 text-white' : 'text-slate-300 dark:text-zinc-600'}`}><Icons.Mic size={20} /></button>
+                            <button onClick={() => onToggleBookmark(card.id)} className={bookmarks.includes(card.id) ? "text-yellow-400 p-2" : "text-slate-300 dark:text-zinc-600 p-2"}><Icons.Bookmark fill={bookmarks.includes(card.id) ? "currentColor" : "none"} /></button>
                         </div>
                     </div>
 
+                    {/* Card Container - Refactored for full content visibility */}
+                    <div className="flex-1 flex items-start justify-center p-6 overflow-y-auto">
+                        <div className={`relative w-full max-w-sm transition-all duration-300 cursor-pointer ${cardAnim}`} onClick={() => setIsFlipped(!isFlipped)}>
+                            {!isFlipped ? (
+                                /* FRONT */
+                                <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-xl border border-slate-200 dark:border-zinc-800 flex flex-col min-h-[50vh]">
+                                    <div className="bg-slate-50 dark:bg-zinc-800/50 p-6 border-b border-slate-100 dark:border-zinc-800 text-center select-none">
+                                        <span className="text-[10px] px-2 py-1 rounded-full font-bold tracking-wider uppercase bg-slate-200 text-slate-600 dark:bg-zinc-700 dark:text-zinc-300 mr-2">{card.category}</span>
+                                        <span className={`text-[10px] px-2 py-1 rounded-full font-bold tracking-wider uppercase ${card.difficulty === 'Senior' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : card.difficulty === 'Principal' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-green-100 text-green-600'}`}>{card.difficulty || 'General'}</span>
+                                        <h3 className="text-xl font-bold text-slate-800 dark:text-white mt-3">{card.title}</h3>
+                                    </div>
+                                    <div className="flex-1 p-8">
+                                        <div className="w-full text-base text-slate-700 dark:text-zinc-300 leading-relaxed font-medium"><Markdown content={card.content} /></div>
+                                    </div>
+                                    <div className="p-4 text-center text-xs text-slate-300 dark:text-zinc-600 font-bold uppercase tracking-widest animate-pulse border-t border-slate-100 dark:border-zinc-800">
+                                        Tap to Reveal Answer
+                                    </div>
+                                </div>
+                            ) : (
+                                /* BACK */
+                                <div className="bg-indigo-50 dark:bg-zinc-900 rounded-3xl shadow-xl border-2 border-indigo-100 dark:border-indigo-900/50 flex flex-col min-h-[50vh]">
+                                    <div className="bg-indigo-100 dark:bg-indigo-900/20 p-4 border-b border-indigo-200 dark:border-indigo-900/50 flex justify-between items-center">
+                                        <h3 className="text-sm font-bold text-indigo-800 dark:text-indigo-300 uppercase tracking-widest">Explanation</h3>
+                                    </div>
+                                    <div className="flex-1 p-8 bg-white dark:bg-zinc-900/50">
+                                        <div className="text-base text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap"><Markdown content={card.explanation} /></div>
+                                    </div>
+
+                                    <div className="p-2 flex justify-center gap-4 bg-indigo-50 dark:bg-indigo-900/10 border-t border-indigo-100 dark:border-zinc-800">
+                                        <button onClick={copyPrompt} className="p-2 text-indigo-400 hover:text-indigo-600 flex items-center gap-2 text-xs font-bold uppercase tracking-wide"><Icons.Robot size={18} /> Ask AI</button>
+                                    </div>
+
+                                    <div className="p-4 border-t border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50">
+                                        <textarea
+                                            className="w-full bg-transparent text-xs text-slate-600 dark:text-zinc-400 placeholder-slate-300 dark:placeholder-zinc-600 resize-none focus:outline-none"
+                                            placeholder="Add personal notes here..."
+                                            rows={3}
+                                            value={notes[card.id] || ''}
+                                            onChange={(e) => onUpdateNote(card.id, e.target.value)}
+                                            onClick={e => e.stopPropagation()}
+                                        />
+                                    </div>
+
+                                    {/* SRS Actions */}
+                                    <div className="grid grid-cols-4 gap-1 p-2 bg-white dark:bg-zinc-900 border-t border-slate-100 dark:border-zinc-800">
+                                        <button onClick={(e) => { e.stopPropagation(); handleSrs(0); }} className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800">
+                                            <span className="text-[10px] font-bold text-red-500 uppercase">Again</span>
+                                            <span className="text-[9px] text-slate-400">1m</span>
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleSrs(1); }} className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800">
+                                            <span className="text-[10px] font-bold text-orange-500 uppercase">Hard</span>
+                                            <span className="text-[9px] text-slate-400">12h</span>
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleSrs(2); }} className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800">
+                                            <span className="text-[10px] font-bold text-green-500 uppercase">Good</span>
+                                            <span className="text-[9px] text-slate-400">1d</span>
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleSrs(3); }} className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800">
+                                            <span className="text-[10px] font-bold text-blue-500 uppercase">Easy</span>
+                                            <span className="text-[9px] text-slate-400">4d</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     {/* Navigation Buttons */}
+                    {/* Navigation Buttons (Fallback) */}
                     <div className="p-8 pb-12 flex justify-center gap-6 z-10">
-                        <button onClick={prevCard} disabled={index === 0} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${animState.prev ? 'animate-pop' : ''} ${index === 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white dark:bg-zinc-800 text-slate-600 dark:text-white shadow-lg hover:scale-105'}`}>
-                            <Icon path={<path d="m15 18-6-6 6-6" />} size={24} />
-                        </button>
-                        <button onClick={nextCard} className={`w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all ${animState.next ? 'animate-pop' : ''}`}>
-                            {isLast ? <Icons.CheckCircle size={24} /> : <Icon path={<path d="m9 18 6-6-6-6" />} size={24} />}
-                        </button>
+                        <div className="absolute top-1/2 left-4 -translate-y-1/2 opacity-20 pointer-events-none"><Icons.X size={48} className="text-red-500" /></div>
+                        <div className="absolute top-1/2 right-4 -translate-y-1/2 opacity-20 pointer-events-none"><Icons.CheckCircle size={48} className="text-green-500" /></div>
+
+                        {!isFlipped && (
+                            <div className="flex gap-4 items-center">
+                                <span className="text-xs font-bold text-slate-400 opacity-50"><Icon path={<path d="m15 18-6-6 6-6" />} size={16} /> Swipe Left</span>
+                                <span className="text-xs font-bold text-slate-400 opacity-50">Swipe Right <Icon path={<path d="m9 18 6-6-6-6" />} size={16} /></span>
+                            </div>
+                        )}
                     </div>
                 </div>
             );

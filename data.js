@@ -29834,7 +29834,7 @@ const SEED_DATA = [
   },
   {
     "id": 50147,
-    "category": "NET Core",
+    "category": ".NET Core",
     "difficulty": "Principal",
     "title": "Host: Systemd",
     "content": "How do you run .NET as a Systemd service?",
