@@ -33465,6 +33465,1606 @@ const SEED_DATA = [
     "title": "Razor View Engine",
     "content": "What is the file extension for Razor views and what symbol starts code blocks?",
     "explanation": "Extension: **.cshtml** (for C#) or **.vbhtml** (for VB).\nSymbol: **@**. Example: `@Model.Name` or `@{ var x = 1; }`. It allows seamless mixing of HTML and server-side logic."
+  },
+  {
+    "id": 61001,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Polymorphism: Upcasting",
+    "content": "Given `class Parent {}` and `class Child : Parent {}`. Is `Parent p = new Child();` valid? What is this called?",
+    "explanation": "Yes, this is **Upcasting** (Implicit). It is valid because a Child *is a* Parent. The reference `p` can point to the Child object, but it can only access members defined in the `Parent` class (unless cast back)."
+  },
+  {
+    "id": 61002,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Polymorphism: Downcasting",
+    "content": "Given `Parent p = new Parent(); Child c = (Child)p;`. What happens at runtime?",
+    "explanation": "This throws an **InvalidCastException**. You cannot coerce a base object into a derived type because the base object lacks the specific memory/fields of the derived class. Downcasting is only valid if the underlying object *is actually* a Child (or derived from it)."
+  },
+  {
+    "id": 61003,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Virtual vs Abstract Method",
+    "content": "What is the difference between a `virtual` method and an `abstract` method?",
+    "explanation": "**Virtual**: Has a default implementation in the base class. Derived classes *can* override it but don't have to.\n**Abstract**: Has *no* implementation (signature only). Derived classes *must* override it (unless they are also abstract). Abstract methods can only exist in Abstract classes."
+  },
+  {
+    "id": 61004,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Interface vs Abstract Class (Versioning)",
+    "content": "Why is adding a new member to an Interface considered a breaking change, while adding to an Abstract Class is not?",
+    "explanation": "If you add a method to an **Interface**, all existing classes implementing it will fail to compile until they implement the new method. If you add a **Virtual** method to an **Abstract Class**, existing heirs inherit the default implementation automatically, so no code breaks (Binary Compatibility)."
+  },
+  {
+    "id": 61005,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Constructor Chaining",
+    "content": "How do you call a constructor from another constructor in the same class?",
+    "explanation": "Use the `this()` keyword syntax: `public MyClass(int x) : this(x, \"default\") { }`. This promotes code reuse by centralizing initialization logic in one 'master' constructor."
+  },
+  {
+    "id": 61006,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Base Constructor Execution",
+    "content": "When a Child class is instantiated, which constructor runs first: Parent or Child?",
+    "explanation": "The **Parent** constructor runs first (to initialize the base state), followed by the **Child** constructor. However, field initializers in the Child class run *before* the Parent constructor."
+  },
+  {
+    "id": 61007,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Static Class Constraints",
+    "content": "Can a Static Class implement an Interface?",
+    "explanation": "**No.** Interfaces define a contract for *instances* (objects). Static classes cannot be instantiated, so they cannot implement interfaces. They can only contain static members."
+  },
+  {
+    "id": 61008,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Sealed Methods",
+    "content": "Can you seal a method? If so, why?",
+    "explanation": "Yes. You can use `sealed override` on a method in a derived class. This prevents *further* derived classes (Grandchildren) from overriding it again. It stops the chain of polymorphism for that specific behavior."
+  },
+  {
+    "id": 61009,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Composition vs Inheritance",
+    "content": "Why is Composition often preferred over Inheritance?",
+    "explanation": "**Composition** (HAS-A) is more flexible than **Inheritance** (IS-A). Inheritance creates a tight coupling; changing the Base class affects all children. Composition allows changing behavior at runtime (Strategy Pattern) and avoids the fragile base class problem."
+  },
+  {
+    "id": 61010,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Protected Internal",
+    "content": "What does `protected internal` access modifier mean?",
+    "explanation": "It means the member is accessible to:\n1. Any class in the **Same Assembly** (Internal).\n2. Any Derived class in **Any Assembly** (Protected).\nIt is an *OR* condition (Union of Protected and Internal)."
+  },
+  {
+    "id": 61011,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Private Protected",
+    "content": "What does `private protected` (C# 7.2) mean?",
+    "explanation": "It is an **Intersection** (AND condition). Accessible only to derived classes that are *also* in the **Same Assembly**. Useful for library authors who want to allow extensibility internally but not expose internals to external consumers inheriting the class."
+  },
+  {
+    "id": 61012,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Method Hiding (Shadowing)",
+    "content": "What happens if you define a method in a Child class with the same name as the Parent but without `override`?",
+    "explanation": "The compiler issues a warning. It treats it as **Method Hiding** (as if you used the `new` keyword). If you call the method on a `Parent` reference, the Parent's version executes. Polymorphism is broken for that method."
+  },
+  {
+    "id": 61013,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Explicit Interface Implementation",
+    "content": "If a class implements two interfaces with the same method name `Save()`, how do you distinguish them?",
+    "explanation": "Use **Explicit Interface Implementation**: `void IFile.Save() { ... }` and `void IDatabase.Save() { ... }`. These methods are private to the class instance and can only be accessed by casting the object to the specific Interface type."
+  },
+  {
+    "id": 61014,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Shallow Copy vs Deep Copy",
+    "content": "What is the difference between `MemberwiseClone()` and a Deep Copy?",
+    "explanation": "**MemberwiseClone** creates a **Shallow Copy**: it copies values and *references*. Both the original and copy point to the same child objects. A **Deep Copy** duplicates the entire object graph, so changes to the copy's children do not affect the original."
+  },
+  {
+    "id": 61015,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Immutable Objects",
+    "content": "How do you make a class Immutable in C#?",
+    "explanation": "1. Make the class `sealed` (optional but good).\n2. Make all properties `get`-only (or `init`-only).\n3. Use `readonly` fields.\n4. Ensure any mutable reference types (Lists) inside are also immutable or copied on get."
+  },
+  {
+    "id": 61016,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Partial Classes",
+    "content": "Can partial classes be defined in different assemblies?",
+    "explanation": "**No.** All parts of a `partial` class must reside in the **Same Assembly** and the **Same Namespace**. The compiler merges them into a single class definition at compile time."
+  },
+  {
+    "id": 61017,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Static Constructor",
+    "content": "When is a Static Constructor called?",
+    "explanation": "It is called automatically by the CLR before the first instance is created or any static members are referenced. It runs at most once per AppDomain. You cannot call it explicitly or pass parameters to it."
+  },
+  {
+    "id": 61018,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Destructor (Finalizer)",
+    "content": "When is the Destructor called?",
+    "explanation": "It is called by the Garbage Collector (GC) just before the object's memory is reclaimed. You cannot predict *when* it will run. It is used to clean up unmanaged resources if `Dispose()` was forgotten."
+  },
+  {
+    "id": 61019,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "IS-A vs HAS-A",
+    "content": "Explain IS-A vs HAS-A relationships.",
+    "explanation": "**IS-A**: Inheritance. `Dog` IS-A `Animal`. Shared behavior.\n**HAS-A**: Composition/Aggregation. `Car` HAS-A `Engine`. Reuse functionality without inheriting the base class contract."
+  },
+  {
+    "id": 61020,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Diamond Problem",
+    "content": "Does C# support multiple class inheritance? Why?",
+    "explanation": "No. C# avoids the **Diamond Problem** (ambiguity if two base classes override the same method). C# supports multiple *interface* inheritance because interfaces contain no state/implementation (historically), avoiding the conflict."
+  },
+  {
+    "id": 61021,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Extension Methods & OOP",
+    "content": "Do Extension Methods break Encapsulation?",
+    "explanation": "Strictly speaking, **No**, because they can only access **Public** members of the extended class. However, they can create the *illusion* of adding methods to a class, which can clutter the API surface if overused."
+  },
+  {
+    "id": 61022,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Covariance",
+    "content": "What is Covariance in generics (`IEnumerable<out T>`)?",
+    "explanation": "It allows you to use a more derived type than originally specified. `IEnumerable<string>` can be assigned to `IEnumerable<object>`. It only works for **Output** positions (return values), ensuring type safety."
+  },
+  {
+    "id": 61023,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Contravariance",
+    "content": "What is Contravariance in generics (`Action<in T>`)?",
+    "explanation": "It allows you to use a more generic type than originally specified. `Action<object>` can be assigned to `Action<string>`. It only works for **Input** positions (parameters), ensuring you can pass a string to a method expecting any object."
+  },
+  {
+    "id": 61024,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Polymorphism: Dynamic vs Static",
+    "content": "Difference between Static and Dynamic Polymorphism.",
+    "explanation": "**Static**: Resolved at Compile Time (Overloading, Operator Overloading).\n**Dynamic**: Resolved at Runtime (Overriding, Abstract methods). The specific implementation depends on the runtime type of the object."
+  },
+  {
+    "id": 61025,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Open/Closed Principle Implementation",
+    "content": "How do you apply OCP to a 'TaxCalculator' class?",
+    "explanation": "Instead of modifying the class with `if (type == \"US\") ... else if (type == \"UK\")`, create an interface `ITaxStrategy`. Create separate classes `UsTax`, `UkTax`. Inject the strategy. The Calculator is now closed for modification but open for extension."
+  },
+  {
+    "id": 61026,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Association vs Aggregation vs Composition",
+    "content": "Difference between Aggregation and Composition?",
+    "explanation": "**Aggregation**: Weak bond. 'Classroom' has 'Students'. If Classroom is destroyed, Students survive.\n**Composition**: Strong bond. 'Car' has 'Engine'. If Car is destroyed, Engine is destroyed (or is meaningless without it)."
+  },
+  {
+    "id": 61027,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Virtual in Constructor",
+    "content": "Why is calling a virtual method in a constructor dangerous?",
+    "explanation": "The constructor executes *before* the derived class is fully initialized. If the virtual method is overridden in the derived class, it will run on an uninitialized object (fields might be null/zero), causing crashes."
+  },
+  {
+    "id": 61028,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Cohesion vs Coupling",
+    "content": "What is the goal regarding Cohesion and Coupling?",
+    "explanation": "**High Cohesion**: Elements inside a module belong together (do one thing well).\n**Low Coupling**: Modules depend on each other as little as possible.\nGoal: High Cohesion, Low Coupling."
+  },
+  {
+    "id": 61029,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Dependency Injection vs Inversion",
+    "content": "Difference between Dependency Inversion Principle (DIP) and Dependency Injection (DI)?",
+    "explanation": "**DIP** is the Principle (High-level should not depend on Low-level). **DI** is the Pattern/Technique used to implement DIP (injecting dependencies via constructor)."
+  },
+  {
+    "id": 61030,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Marker Interface",
+    "content": "What is a Marker Interface?",
+    "explanation": "An interface with **no methods or properties** (empty). It is used to tag a class with metadata (e.g., `ISerializable` in old .NET). Modern C# prefers **Attributes** for this purpose."
+  },
+  {
+    "id": 61031,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Object Slicing",
+    "content": "Does Object Slicing happen in C#?",
+    "explanation": "Not with Classes (Reference types), as variables just hold pointers. It **CAN** happen if you cast a derived struct to a base interface, boxing it, but C# doesn't support struct inheritance, so classic C++ slicing is rare unless manually copying fields."
+  },
+  {
+    "id": 61032,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Mixin",
+    "content": "How do you simulate Mixins in C#?",
+    "explanation": "C# doesn't support Mixins natively. You can simulate them using **Default Interface Methods** (C# 8+) or **Extension Methods** on interfaces to add behavior to any class implementing that interface."
+  },
+  {
+    "id": 61033,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Anonymous Types",
+    "content": "Are Anonymous Types polymorphic?",
+    "explanation": "No. `var x = new { A = 1 };`. You cannot inherit from them or define interfaces for them. They are sealed, internal classes generated by the compiler. Useful only for local data shaping (LINQ)."
+  },
+  {
+    "id": 61034,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Tuples vs Classes",
+    "content": "When to use a Tuple instead of a Class?",
+    "explanation": "Use **Tuples** for lightweight, temporary groups of values (e.g., returning 2 values from a private method). Use **Classes/Records** for public APIs, long-lived data, or when the data has identity and behavior."
+  },
+  {
+    "id": 61035,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Sealed Class Performance",
+    "content": "Does sealing a class improve performance?",
+    "explanation": "Yes, slightly. The JIT compiler can perform **Devirtualization**. If a method is called on a sealed class, the JIT knows it cannot be overridden, so it replaces the virtual call table lookup with a direct function call."
+  },
+  {
+    "id": 61036,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Static Class vs Singleton",
+    "content": "Can a Static Class replace a Singleton?",
+    "explanation": "For pure utility functions (`Math.Abs`), yes. But Static Classes cannot implement **Interfaces**, cannot be passed as parameters, and cannot be lazy-loaded or swapped out for testing (Mocking). Singleton is more flexible for dependencies."
+  },
+  {
+    "id": 61037,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Readonly vs Constant in OOP",
+    "content": "Why prefer `readonly` over `const` in public APIs?",
+    "explanation": "`const` is baked into the consuming assembly at compile time. If you update the library's `const` value, the consumer still has the old value until *they* recompile. `readonly` is looked up at runtime, avoiding versioning issues."
+  },
+  {
+    "id": 61038,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Liskov Substitution Example",
+    "content": "Why does a `Square` inheriting from `Rectangle` violate LSP?",
+    "explanation": "In Math, a Square is a Rectangle. In OOP, it violates behavior. If code expects a Rectangle, it assumes `SetWidth(5)` only changes width. But for a Square, `SetWidth(5)` must also change Height to 5. This unexpected side effect breaks the contract."
+  },
+  {
+    "id": 61039,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Method Overloading Return Type",
+    "content": "Can you overload a method just by changing the return type?",
+    "explanation": "**No.** The compiler distinguishes methods by their signature (Name + Parameter Types). Return type is NOT part of the signature for overloading resolution."
+  },
+  {
+    "id": 61040,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Private Constructor Use Case",
+    "content": "Name two uses for a private constructor.",
+    "explanation": "1. **Singleton Pattern**: Preventing external instantiation.\n2. **Factory Pattern**: Forcing users to use a static `Create()` method.\n3. **Static Utility Class**: Preventing instantiation of a class that contains only static members (before `static class` keyword existed)."
+  },
+  {
+    "id": 61041,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Init-Only Setters",
+    "content": "What is the `init` keyword in properties?",
+    "explanation": "It allows a property to be set **only during initialization** (constructor or object initializer syntax). After that, it becomes immutable. `public int Id { get; init; }`."
+  },
+  {
+    "id": 61042,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Record Types",
+    "content": "How do Records differ from Classes in OOP terms?",
+    "explanation": "Records provide **Value Semantics** for reference types. Two records are equal if their *data* is equal (`a == b`), whereas classes are equal only if they refer to the *same object*. Records are designed for immutable data models."
+  },
+  {
+    "id": 61043,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Volatile Field",
+    "content": "What does `volatile` do to a field?",
+    "explanation": "It tells the compiler and CPU not to cache the field in a register or reorder instructions involving it. The value is always read from/written to main memory. Essential for lock-free thread signaling."
+  },
+  {
+    "id": 61044,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Value Object Pattern",
+    "content": "What defines a Value Object?",
+    "explanation": "An object defined by its **Attributes**, not its identity. It is Immutable. Two Value Objects with the same values are considered equal (e.g., `$5` bill is equal to another `$5` bill). It has no lifecycle or ID."
+  },
+  {
+    "id": 61045,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Anemic Domain Model",
+    "content": "What is an Anemic Domain Model?",
+    "explanation": "An anti-pattern where Objects contains *only* data (properties) and no behavior. The logic is stripped out into \"Service\" classes. This violates Encapsulation (OOP) and turns the code into procedural programming."
+  },
+  {
+    "id": 61046,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Law of Demeter",
+    "content": "What is the Law of Demeter?",
+    "explanation": "\"Don't talk to strangers\". An object should only call methods on:\n1. Itself.\n2. Its parameters.\n3. Objects it creates.\n4. Its direct dependencies.\nAvoid chaining: `order.Customer.Address.ZipCode`."
+  },
+  {
+    "id": 61047,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Fluent Interface",
+    "content": "What is a Fluent Interface?",
+    "explanation": "An API design where methods return `this` (or the context object), allowing method chaining. `new Order().AddItem(x).SetAddress(y).Submit()`. Improves readability."
+  },
+  {
+    "id": 61048,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Null Object Pattern",
+    "content": "How does the Null Object Pattern simplify code?",
+    "explanation": "Instead of returning `null`, return a `NullUser` object that implements `IUser` but does nothing. This removes the need for `if (user != null)` checks throughout the codebase."
+  },
+  {
+    "id": 61049,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Generic Constraints",
+    "content": "Why use Generic Constraints (`where T : class`)?",
+    "explanation": "To enforce type safety and enable capabilities on the generic type. `where T : new()` allows you to call `new T()`. `where T : IDisposable` allows you to put `T` in a `using` block."
+  },
+  {
+    "id": 61050,
+    "category": "OOP Deep Dive",
+    "difficulty": "Senior",
+    "title": "Deconstruction",
+    "content": "How does Object Deconstruction work?",
+    "explanation": "By implementing a `Deconstruct` method. `public void Deconstruct(out string first, out string last)`. Allows assigning to tuples: `var (f, l) = personInstance;`."
+  },
+  {
+    "id": 61051,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Inheritance: Base Pointer to Derived Object",
+    "content": "If `Child` inherits `Parent`, and you do `Parent p = new Child();`. If `Parent` has a method `Foo()` and `Child` has a method `Foo()` (without override/new), which one runs when you call `p.Foo()`?",
+    "explanation": "**Parent.Foo()** runs. Since the method was not marked `virtual` in the Parent (or `override` in Child), the compiler binds the call based on the **Reference Type** (`Parent`), not the runtime object type (`Child`). This is non-polymorphic behavior."
+  },
+  {
+    "id": 61052,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Exception in Constructor",
+    "content": "If a constructor throws an exception, is the object created?",
+    "explanation": "**No.** The object is not fully initialized. The memory was allocated, but the reference is never returned to the caller. The allocated memory will be reclaimed by the Garbage Collector eventually. The Finalizer (if defined) will NOT run because the object was never fully constructed."
+  },
+  {
+    "id": 61053,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Virtual Call in Constructor",
+    "content": "Why is it dangerous to call a virtual method in a constructor? Explain the 'half-baked' object state.",
+    "explanation": "If `Parent` ctor calls `virtual Foo()`, and `Child` overrides `Foo()`, the Child's override runs **before** the Child's constructor has executed. The Child's fields are still at their default values (0/null). The override might try to access fields that aren't initialized yet, causing NREs or logic bugs."
+  },
+  {
+    "id": 61054,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Static Constructor Exception",
+    "content": "What happens if a Static Constructor throws an exception?",
+    "explanation": "The `TypeInitializationException` is thrown. The CLR marks the type as **unusable**. Any subsequent attempt to access that class (in the same AppDomain) will throw the *same* exception immediately without retrying the constructor. The app usually crashes or the type becomes dead."
+  },
+  {
+    "id": 61055,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Interface Method Hiding",
+    "content": "If interface `IA` has `void Foo()` and `IB` has `void Foo()`, and `class C : IA, IB` implements both explicitly. Can you call `c.Foo()`?",
+    "explanation": "**No.** If implemented explicitly, `Foo` is not public on the class `C`. You *must* cast the object to the interface type: `((IA)c).Foo()` or `((IB)c).Foo()`. Calls to `c.Foo()` will fail compilation unless `C` also implements a public `Foo`."
+  },
+  {
+    "id": 61056,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Field Initialization Order",
+    "content": "In what order are fields initialized: Static fields vs Instance fields?",
+    "explanation": "1. **Static Fields** (when class is loaded/accessed).\n2. **Static Constructor**.\n3. **Instance Fields** (derived class fields first, then base class fields).\n4. **Base Constructor**.\n5. **Derived Constructor**."
+  },
+  {
+    "id": 61057,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Destructor vs Dispose Exception",
+    "content": "What happens if a Destructor (Finalizer) throws an exception?",
+    "explanation": "The runtime ignores unhandled exceptions in Finalizers in *some* old .NET versions, but in **modern .NET (Core/5+)**, it **crashes the process** immediately. You cannot catch exceptions thrown from a finalizer thread."
+  },
+  {
+    "id": 61058,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Singleton Double-Check Locking",
+    "content": "Why do we need the `volatile` keyword in Double-Check Locking Singleton?",
+    "explanation": "Without `volatile`, the CPU/Compiler might reorder instructions. It could publish the reference to the Singleton instance *before* the constructor has finished executing. Thread B might see a non-null instance and use it while it's partially initialized."
+  },
+  {
+    "id": 61059,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Struct Mutability in Collections",
+    "content": "If you have `List<MyStruct>`, and you do `list[0].X = 5;`, does it compile? Why?",
+    "explanation": "It **fails** to compile. `list[0]` returns a **copy** of the struct (because structs are value types). Modifying a temporary copy is useless, so the compiler blocks it. You must do: `var temp = list[0]; temp.X = 5; list[0] = temp;`."
+  },
+  {
+    "id": 61060,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Abstract Class with Private Constructor",
+    "content": "Can an Abstract Class have a private constructor? If yes, how can it be inherited?",
+    "explanation": "Yes, it can. However, it can **only** be inherited by nested classes *inside* the abstract class itself (since they have access to private members). External classes cannot inherit from it. Useful for restricted hierarchies (like Smart Enums)."
+  },
+  {
+    "id": 61061,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Polymorphism with Fields",
+    "content": "Can you override a field in C#?",
+    "explanation": "**No.** Fields cannot be virtual or overridden. Only methods, properties, events, and indexers can be polymorphic. If Child declares a field with the same name, it **hides** the Parent field (shadowing), it does not override it."
+  },
+  {
+    "id": 61062,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Sealed Override Performance",
+    "content": "Does `sealed override` improve performance?",
+    "explanation": "Yes. It allows the JIT compiler to **Devirtualize** the call. If the JIT sees a call to a sealed method, it knows exactly which implementation to call at compile time, skipping the v-table lookup and enabling inlining."
+  },
+  {
+    "id": 61063,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Interface Constant",
+    "content": "Can an Interface contain a constant (`const`)?",
+    "explanation": "**No.** Interfaces define contracts for instance behavior. Constants are static implementation details. Interfaces can, however, contain **Static Readonly Properties** or Default Methods (C# 8+) that return constant values."
+  },
+  {
+    "id": 61064,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "StackOverflow in Property",
+    "content": "How do you accidentally cause a StackOverflow in a property setter?",
+    "explanation": "By assigning to the property itself instead of the backing field. `set { MyProp = value; }` calls the setter recursively forever. Correct way: `set { _myField = value; }`."
+  },
+  {
+    "id": 61065,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Generic Covariance with Value Types",
+    "content": "Why doesn't `IEnumerable<object> list = new List<int>();` work, even though `int` is `object`?",
+    "explanation": "Covariance (`out T`) only works for **Reference Types**. Value types (`int`) require different memory layouts/representations than pointers. The runtime cannot treat a `List<int>` (contiguous integers) as a `List<object>` (contiguous pointers) without copying."
+  },
+  {
+    "id": 61066,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Dispose Pattern Finalizer",
+    "content": "Why should you call `GC.SuppressFinalize(this)` in `Dispose()`?",
+    "explanation": "If the object is manually disposed, the cleanup is done. `SuppressFinalize` tells the GC: \"Don't bother putting this object in the Finalization Queue.\" This prevents the performance penalty of double-cleanup and executing the Finalizer unnecessarily."
+  },
+  {
+    "id": 61067,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Reference Equality of Boxed Structs",
+    "content": "`int a = 5; object o1 = a; object o2 = a;` Is `o1 == o2` true?",
+    "explanation": "**No.** Boxing creates a **new object** on the heap each time. `o1` and `o2` point to two different heap objects (at different addresses). Reference equality returns false. `o1.Equals(o2)` would return true (value equality)."
+  },
+  {
+    "id": 61068,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Static Class Inheritance",
+    "content": "Can a Static Class inherit from another Static Class?",
+    "explanation": "**No.** Static classes cannot inherit from anything (except implicitly `System.Object`). They are effectively `sealed` and `abstract` at the IL level."
+  },
+  {
+    "id": 61069,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Default Interface Methods Diamond Problem",
+    "content": "If `IA` and `IB` both provide a default implementation for `Foo()`, and `C` implements both, what happens?",
+    "explanation": "The compiler throws an error: **Ambiguous invocation**. Class `C` **must** explicitly implement `Foo()` to resolve the ambiguity (it can allow calling `IA.Foo()` or `IB.Foo()` internally if needed)."
+  },
+  {
+    "id": 61070,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Calling Base Property in Setter",
+    "content": "If you override a property, can you call `base.Property = value` in the setter?",
+    "explanation": "Yes. This is common when you want to add validation logic in the child setter but store the value in the parent's backing mechanism. `set { if (value < 0) throw...; base.Value = value; }`."
+  },
+  {
+    "id": 61071,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Null in 'as' operator",
+    "content": "If `object o = null`, what does `(string)o` return vs `o as string`?",
+    "explanation": "Both return `null`. The cast `(string)null` is valid. The operator `null as string` is valid. The difference appears only if `o` is *not null* but incompatible: Cast throws exception, `as` returns null."
+  },
+  {
+    "id": 61072,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Constructor Exception & Finalizer",
+    "content": "If a constructor throws, does the Finalizer run?",
+    "explanation": "Generally **No**, because the object is not considered fully constructed. However, if inside the constructor you initialized a `SafeHandle` or other finalizable member *before* the throw, *that member's* finalizer will run."
+  },
+  {
+    "id": 61073,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Locking on 'this' or Type",
+    "content": "Why is `lock(this)` or `lock(typeof(MyClass))` bad practice?",
+    "explanation": "**Public Locking Risk**. Since `this` and `Type` objects are publicly accessible, external code can also lock on them. This creates **Deadlocks** controlled by external, unrelated code. Always lock on a `private readonly object _lock`."
+  },
+  {
+    "id": 61074,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Event Memory Leak",
+    "content": "If Object A subscribes to Object B's event, and A is set to null, is A collected?",
+    "explanation": "**No.** Object B holds a reference to Object A (via the delegate in the invocation list). As long as B is alive, A is kept alive. This is the most common managed memory leak. You must unsubscribe (`-=`) or use Weak Events."
+  },
+  {
+    "id": 61075,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Struct Default Constructor",
+    "content": "Can you define a parameterless constructor for a Struct in C#?",
+    "explanation": "Prior to C# 10: **No**. Structs always implicitly had a default constructor that zeroed memory. From C# 10+: **Yes**, you can define one, but be careful: `default(MyStruct)` still bypasses it and produces zeroed memory."
+  },
+  {
+    "id": 61076,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "New vs Override Behavior",
+    "content": "Given `Base b = new Derived();`. If Base has `virtual Foo` and Derived has `new Foo`, calling `b.Foo()` calls which one?",
+    "explanation": "**Base.Foo()**. Because `new` breaks the polymorphism chain. The reference `b` is of type Base, and since the method is not overridden in the derived class (it's hidden), the Base implementation is used."
+  },
+  {
+    "id": 61077,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Readonly Field Reflection",
+    "content": "Can you change a `readonly` field using Reflection?",
+    "explanation": "**Yes.** `FieldInfo.SetValue()` works on readonly fields. However, this is dangerous. If the field was optimized/inlined by the JIT (common for static readonly), the running code might still use the old value."
+  },
+  {
+    "id": 61078,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Static Class as Generic Parameter",
+    "content": "Can you use a Static Class as a Generic Type Parameter `List<MyStaticClass>`?",
+    "explanation": "**No.** Static classes cannot be used as type arguments because you cannot create variables/instances of them. Generics require instanceable types."
+  },
+  {
+    "id": 61079,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Interface Internal Member",
+    "content": "Can an Interface have an `internal` member?",
+    "explanation": "**Yes** (since C# 8.0). But only if the interface itself is public. However, typically all interface members are public by default. Internal members in interfaces are used for library-internal contracts not meant for public implementation."
+  },
+  {
+    "id": 61080,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Object Identity vs Equality",
+    "content": "Difference between `ReferenceEquals(a, b)` and `a.Equals(b)`.",
+    "explanation": "**ReferenceEquals** checks if they point to the **same memory address** (Identity). **Equals** (virtual) checks for semantic equality (defined by the class). By default, `Equals` calls `ReferenceEquals` for classes, but checks fields for Structs/Strings."
+  },
+  {
+    "id": 61081,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Partial Method Restrictions",
+    "content": "What are the restrictions on Partial Methods (pre C# 9)?",
+    "explanation": "They must return `void`, cannot have `out` parameters, and cannot have visibility modifiers (implicitly private). If the implementing part is missing, the compiler removes the call entirely (like Conditional compilation)."
+  },
+  {
+    "id": 61082,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Dynamic Dispatch",
+    "content": "Does `dynamic` use the VTable?",
+    "explanation": "No. `dynamic` uses the **DLR (Dynamic Language Runtime)**. It performs late-binding, looking up members by name at runtime using Reflection/Binders. It bypasses compile-time type checking and standard vtable dispatch."
+  },
+  {
+    "id": 61083,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Base Class Constraint",
+    "content": "Can you constrain a Generic `T` to be a specific Sealed class?",
+    "explanation": "Technically yes (`where T : MySealedClass`), but it's useless because `T` can *only* be that class. It defeats the purpose of generics. The compiler might allow it, but it effectively hardcodes the type."
+  },
+  {
+    "id": 61084,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Extension Method on Null",
+    "content": "Can you call an Extension Method on a null reference?",
+    "explanation": "**Yes.** Since Extension Methods are static calls (`StaticClass.Method(obj)`), `obj` can be null. You can write extensions like `obj.IsNull()` that work safely on nulls, unlike instance methods which throw `NullReferenceException`."
+  },
+  {
+    "id": 61085,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Explicit Interface Boxing",
+    "content": "If a Struct implements an Interface explicitly, does calling the method cause boxing?",
+    "explanation": "**Yes.** To call an explicit interface method, you must cast the struct to the Interface (`((IFace)s).Method()`). Casting a struct to an interface **always** boxes it to the Heap."
+  },
+  {
+    "id": 61086,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Volatile and Arrays",
+    "content": "If you mark an array field `volatile`, are the array elements volatile?",
+    "explanation": "**No.** Only the **reference** to the array is volatile (atomic replacement of the array object). The elements inside the array are NOT volatile. You must use `Volatile.Read/Write` or `Interlocked` for elements."
+  },
+  {
+    "id": 61087,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Record: With Expression",
+    "content": "How does the `with` expression work in Records?",
+    "explanation": "It performs a **Non-Destructive Mutation**. It clones the object (Shallow Copy) and then modifies the specified properties in the initialization block, returning a new instance. Original record remains unchanged."
+  },
+  {
+    "id": 61088,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Deconstruct Order",
+    "content": "Does the order of `out` parameters in `Deconstruct` matter?",
+    "explanation": "Yes. It determines the positional mapping to tuples. `public void Deconstruct(out int x, out int y)` maps to `var (a, b) = obj` where `a=x` and `b=y`. Changing parameter order breaks consumers."
+  },
+  {
+    "id": 61089,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Finalizer in Struct",
+    "content": "Can a Struct have a Finalizer?",
+    "explanation": "**No.** Structs are value types; they do not have an entry in the GC's Finalization Queue. They are destroyed when the stack frame pops. Only Reference Types can have Finalizers."
+  },
+  {
+    "id": 61090,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Static Class Serialization",
+    "content": "Can you serialize a Static Class?",
+    "explanation": "**No.** Static classes have no instance state. Serialization is about saving the state of an instance. Static members belong to the Type, not an object, and are generally ignored by serializers."
+  },
+  {
+    "id": 61091,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Ref Return",
+    "content": "What is `ref return`?",
+    "explanation": "It allows a method to return a **reference** to a variable (storage location) rather than its value. This allows the caller to assign values *into* that location. `ref int GetSlot() ... GetSlot() = 5;`. Used for high-performance memory access."
+  },
+  {
+    "id": 61092,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Unsafe Code Pointers",
+    "content": "Can pointers (`int*`) point to managed objects on the Heap?",
+    "explanation": "Only if you **Pin** the object (`fixed` statement). The GC moves objects during compaction. A raw pointer would become invalid (dangling) if the object moved. Pinning tells the GC \"Do not move this object\"."
+  },
+  {
+    "id": 61093,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Circular Dependency in Constructor Injection",
+    "content": "How do you resolve Circular Dependency in Constructor Injection (A needs B, B needs A)?",
+    "explanation": "Refactor! (Extract shared logic to C). If impossible, use **Property Injection** for one, or inject `Lazy<A>` or `IServiceProvider` (Factory) to delay the resolution of one dependency until after construction."
+  },
+  {
+    "id": 61094,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Tuple Equality",
+    "content": "Do `ValueTuple` (C# 7) support `==` equality?",
+    "explanation": "Yes. The compiler generates equality checks that compare members field-by-field. `(1, 2) == (1, 2)` is true. Old `System.Tuple` (Class) did not support `==` operator (reference equality)."
+  },
+  {
+    "id": 61095,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Operator Overloading restrictions",
+    "content": "Can you overload `&&` or `||`?",
+    "explanation": "Not directly. You overload `&` and `|` and `true` and `false` operators. The compiler uses these to construct short-circuiting logic for `&&` and `||` automatically."
+  },
+  {
+    "id": 61096,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Yield Return Try-Catch",
+    "content": "Can you `yield return` inside a `try-catch` block?",
+    "explanation": "**No.** You cannot yield inside a `try-catch` (compiler error). You CAN yield inside a `try-finally`. This restriction exists because the state machine cannot easily jump back into a protected region while preserving exception handling context."
+  },
+  {
+    "id": 61097,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "WeakEventManager",
+    "content": "What is `WeakEventManager`?",
+    "explanation": "A built-in .NET class (WPF) that implements the Weak Event Pattern. It acts as a middleman, holding weak references to subscribers so they can be garbage collected even if they forget to unsubscribe."
+  },
+  {
+    "id": 61098,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Type Initializer Exception",
+    "content": "What happens if a static field initializer throws?",
+    "explanation": "It throws `TypeInitializationException` wrapping the original exception. The type becomes unusable in the AppDomain. This is why complex logic in static initializers is risky."
+  },
+  {
+    "id": 61099,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Generic Type Static Fields",
+    "content": "Do `MyClass<int>` and `MyClass<string>` share static fields?",
+    "explanation": "**No.** Each closed generic type (`MyClass<int>`) has its **own** set of static fields. They are completely separate classes at runtime. They do NOT share data."
+  },
+  {
+    "id": 61100,
+    "category": "OOP Deep Dive",
+    "difficulty": "Principal",
+    "title": "Covariant Return Types",
+    "content": "What are Covariant Return Types (C# 9)?",
+    "explanation": "Allows an overriding method to return a **more derived** type than the base method. \nBase: `public virtual Employee Get()`. \nDerived: `public override Manager Get()`. \nPreviously, signatures had to match exactly."
+  },
+  {
+    "id": 62001,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "SRP: Definition Nuance",
+    "content": "Does the Single Responsibility Principle (SRP) mean a class should only do 'one thing'?",
+    "explanation": "No, that's a common misconception (that's the function level rule). SRP states a class should have **one reason to change**. This links responsibility to **people/actors**. If a class handles logic for both the CTO (Database Schema) and the CFO (Financial Reporting), it violates SRP because changes from two different business departments affect the same source file."
+  },
+  {
+    "id": 62002,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "SRP: Cohesion vs Coupling",
+    "content": "How does SRP relate to Cohesion?",
+    "explanation": "SRP aims for **High Cohesion**. All methods in a class should be closely related to the class's single purpose. If a class has low cohesion (random collection of helper methods), it likely violates SRP. Splitting it increases cohesion."
+  },
+  {
+    "id": 62003,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "OCP: Extension vs Modification",
+    "content": "In the Open/Closed Principle, what does 'Closed for Modification' protect against?",
+    "explanation": "It protects **Regression Bugs**. If you modify existing, tested code to add a new feature, you risk breaking old features. By keeping the class 'Closed' and adding new code via extension (Inheritance/Composition), you ensure the original stability is preserved."
+  },
+  {
+    "id": 62004,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "OCP: Strategy Pattern",
+    "content": "How is the Strategy Pattern the ultimate implementation of OCP?",
+    "explanation": "Instead of `if (type == A) doA() else doB()`, you define an interface `IStrategy`. The consuming class depends on `IStrategy`. To add a new type C, you create `StrategyC` class without touching the consumer code at all. The system is extended purely by adding new files."
+  },
+  {
+    "id": 62005,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "LSP: Preconditions",
+    "content": "How can a derived class violate Liskov Substitution by strengthening preconditions?",
+    "explanation": "If the Base class method accepts `int x` (any integer), and the Derived class overrides it to throw if `x < 0`, it has **Strengthened** the precondition. A client coded against the Base class assumes negative numbers work, but the Derived class crashes. This violates LSP."
+  },
+  {
+    "id": 62006,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "LSP: Postconditions",
+    "content": "How can a derived class violate Liskov Substitution by weakening postconditions?",
+    "explanation": "If the Base class guarantees the return value is `positive`, and the Derived class returns `-1`, it has **Weakened** the postcondition. The client relies on the Base contract (positive result) and will break when receiving negative numbers from the Child."
+  },
+  {
+    "id": 62007,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "LSP: Classic Square/Rectangle",
+    "content": "Why is `Square` inheriting `Rectangle` the canonical LSP violation?",
+    "explanation": "Mathematically `Square` IS-A `Rectangle`. Behaviorally it is not. A Rectangle allows changing Width independently of Height. A Square enforces `Width == Height`. If code sets `rect.Width = 5; rect.Height = 10;` and expects `Area == 50`, a Square implementation would return `100` (since setting Height changed Width). The behavior is inconsistent."
+  },
+  {
+    "id": 62008,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "ISP: Fat Interfaces",
+    "content": "What is the harm of a 'Fat Interface' (e.g., `IGodObject`)?",
+    "explanation": "It forces clients to implement methods they don't need (often throwing `NotImplementedException`). It couples clients to changes in unrelated methods. If `IGodObject` adds a `Fly()` method, the `Car` class implementing it breaks, violating ISP."
+  },
+  {
+    "id": 62009,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "ISP: Role Interfaces",
+    "content": "What is a 'Role Interface' in the context of ISP?",
+    "explanation": "An interface designed for a specific client interaction (a Role). Instead of `IUser` having `Login()`, `Save()`, `Email()`, you split it into `IAuthenticatable`, `IPersistable`, `IEmailable`. Clients depend only on the role they need."
+  },
+  {
+    "id": 62010,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "DIP: Abstraction Ownership",
+    "content": "Who should own the Interface abstraction: The High-level module or the Low-level module?",
+    "explanation": "The **High-level module**. If `OrderService` needs a repository, `OrderService` should define `IOrderRepository`. The Database layer implements it. This ensures the Business Logic doesn't depend on the Database DLL, but the Database DLL depends on the Business Logic (Inverted)."
+  },
+  {
+    "id": 62011,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "DIP: New Keyword",
+    "content": "Why is the `new` keyword often a violation of DIP?",
+    "explanation": "`new SqlRepository()` creates a direct dependency on a concrete implementation. The class becomes tightly coupled to SQL. DIP requires injecting `IRepository`, allowing the concrete type to be swapped (e.g., for `MockRepository` in tests) without changing the class."
+  },
+  {
+    "id": 62012,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "SRP: Active Record Pattern",
+    "content": "Why is the Active Record pattern (Entity handles its own Save()) considered an SRP violation?",
+    "explanation": "The Entity mixes **Domain Logic** (validation, business rules) with **Persistence Logic** (SQL, connection handling). Changing the Database schema requires changing the Domain Entity. DDD prefers separating them (Entity vs Repository)."
+  },
+  {
+    "id": 62013,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "OCP: Switch Statements",
+    "content": "Why are `switch` statements often a 'smell' for OCP violation?",
+    "explanation": "A switch on `Type` implies that every time you add a new type, you must find and modify every switch statement in the codebase. Replacing switches with **Polymorphism** (virtual methods) allows the new type to contain its own logic, respecting OCP."
+  },
+  {
+    "id": 62014,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "LSP: Exception Types",
+    "content": "Does throwing a new type of Exception in a derived method violate LSP?",
+    "explanation": "Yes, if the new Exception does not inherit from the exceptions thrown by the base class. The client's `catch` block expects specific errors. If the derived class throws an unexpected `DatabaseException`, the client crashes, violating the contract."
+  },
+  {
+    "id": 62015,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "ISP: Header Files vs C#",
+    "content": "How does ISP affect compilation time (conceptually from C++)?",
+    "explanation": "In C++, modifying a Fat Header file forced recompilation of all consumers. In C#, modifying a Fat Interface forces recompilation/deployment of all dependent assemblies. ISP minimizes the blast radius of changes."
+  },
+  {
+    "id": 62016,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "DIP vs DI",
+    "content": "Is Dependency Injection the only way to implement DIP?",
+    "explanation": "No. **DI** (Constructor Injection) is the most common way. But you can also use **Service Locator** (Anti-pattern but implements DIP) or **Factory Pattern**. The core principle is Inversion of Control, regardless of the wiring mechanism."
+  },
+  {
+    "id": 62017,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "SRP: Logging",
+    "content": "Should a Business Service handle Logging? Does it violate SRP?",
+    "explanation": "Strictly speaking, yes. Logging is a cross-cutting concern. However, pragmatically, injecting `ILogger` is accepted. To strictly follow SRP, you would use **Decorators** or **AOP** (Interceptors) to handle logging outside the business method entirely."
+  },
+  {
+    "id": 62018,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "OCP: Extension Methods",
+    "content": "Do C# Extension Methods enable OCP?",
+    "explanation": "Yes. They allow you to add functionality to a class (e.g., `string`) without modifying the original source code or inheriting from it (which might be sealed). This is a powerful OCP tool for library consumers."
+  },
+  {
+    "id": 62019,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "LSP: Covariance",
+    "content": "How does Covariance (returning a more derived type) relate to LSP?",
+    "explanation": "It supports LSP. If the Base method returns `Fruit`, the Derived method returning `Apple` is valid. The client expects a `Fruit` and gets an `Apple` (which IS-A `Fruit`). The contract is satisfied."
+  },
+  {
+    "id": 62020,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "LSP: Contravariance",
+    "content": "How does Contravariance (accepting a less derived type) relate to LSP?",
+    "explanation": "It supports LSP. If Base accepts `Apple`, Derived can accept `Fruit`. The client calls with `Apple`. Derived handles `Fruit` (which includes Apple). The contract is satisfied. However, Derived accepting *only* `GreenApple` (more specific) violates LSP."
+  },
+  {
+    "id": 62021,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "ISP: Adapter Pattern",
+    "content": "How can the Adapter Pattern fix an ISP violation?",
+    "explanation": "If you are forced to use a 3rd party Fat Class, you can create a small Interface (ISP compliant) and an Adapter that wraps the Fat Class. Your code depends on the small interface, isolating the mess."
+  },
+  {
+    "id": 62022,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "DIP: Layered Architecture",
+    "content": "How does DIP change the dependency flow in N-Tier architecture?",
+    "explanation": "In traditional N-Tier: UI -> Logic -> Data (Dependencies flow down). In **Clean Architecture** (using DIP): UI -> Logic <- Data (Dependencies point inward). The Data Layer depends on interfaces defined in the Logic Layer."
+  },
+  {
+    "id": 62023,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "SRP: God Class",
+    "content": "What is a 'God Class'?",
+    "explanation": "A class that knows too much or does too much (e.g., `Utils` or `Manager`). It violates SRP by being a central dumping ground for unrelated logic. It becomes a bottleneck for changes and merge conflicts."
+  },
+  {
+    "id": 62024,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "OCP: Bug Fixes",
+    "content": "Does OCP forbid modifying code to fix bugs?",
+    "explanation": "No. OCP applies to **Features** and **Behavior Changes**. If the code is buggy (wrong behavior), you must modify it to correct it. OCP is about preventing the destabilization of *working* code when adding new requirements."
+  },
+  {
+    "id": 62025,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "LSP: NotImplementedException",
+    "content": "Is throwing `NotImplementedException` a violation of LSP?",
+    "explanation": "**Yes, usually.** It implies the Derived class cannot fulfill the contract of the Base class. Example: `ReadOnlyList` inheriting from `List` and throwing on `Add()`. This suggests the inheritance hierarchy is flawed (should separate `IReadable` vs `IWritable`)."
+  },
+  {
+    "id": 62026,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "ISP: Default Interface Methods",
+    "content": "Do C# Default Interface Methods violate ISP?",
+    "explanation": "They can mitigate the *impact* of adding methods (no breaking changes), but they can encourage ISP violations by allowing interfaces to grow indefinitely ('Kitchen Sink' interfaces) instead of splitting them into cohesive roles."
+  },
+  {
+    "id": 62027,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "DIP: Mocking",
+    "content": "How does DIP facilitate Unit Testing?",
+    "explanation": "By depending on Interfaces (`IEmailSender`) instead of Concrete types (`SmtpClient`), the test runner can inject a `MockEmailSender`. This isolates the unit under test from external side effects (IO/Network)."
+  },
+  {
+    "id": 62028,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "Violating all principles",
+    "content": "What is 'STUPID' code?",
+    "explanation": "The anti-pattern mnemonic: **S**ingleton, **T**ight Coupling, **U**ntestable, **P**remature Optimization, **I**ndescriptive Naming, **D**uplication. It is the opposite of SOLID."
+  },
+  {
+    "id": 62029,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "SRP: Code Duplication",
+    "content": "Does removing all code duplication always satisfy SRP?",
+    "explanation": "No. Sometimes duplication is accidental but semantic separation is real. Merging two methods that look alike but serve different actors (CFO vs CTO) violates SRP because a change for one actor will inadvertently affect the other."
+  },
+  {
+    "id": 62030,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "OCP: Composition over Inheritance",
+    "content": "Why is Composition preferred over Inheritance for OCP?",
+    "explanation": "Inheritance exposes the internals of the Base class to the Child (fragile base class). Composition treats behavior as a pluggable component (black box). It is easier to extend behavior by injecting a different component implementation than by deep class hierarchies."
+  },
+  {
+    "id": 62031,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "LSP: Is-A Relationship",
+    "content": "Is 'Is-A' sufficient for inheritance?",
+    "explanation": "No. 'Is-Substitutable-For' is the correct rule (LSP). In biology, Penguin IS-A Bird. In code, if `Bird` has `Fly()`, Penguin cannot substitute it. The model must reflect *behavior*, not just taxonomy."
+  },
+  {
+    "id": 62032,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "ISP: Client Specific Interfaces",
+    "content": "What is the benefit of defining interfaces in the Client package?",
+    "explanation": "It ensures the interface contains *only* what the client needs (ISP). It also inverts the dependency direction (DIP). The implementation package must reference the client package (or a common contracts package), preventing the client from depending on implementation details."
+  },
+  {
+    "id": 62033,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "DIP: Service Locator",
+    "content": "Why is Service Locator considered an anti-pattern compared to DI?",
+    "explanation": "Service Locator **hides dependencies**. A class constructor looks empty, but inside it calls `Locator.Get<T>()`. You cannot know what the class needs without reading the code. DI makes dependencies explicit in the constructor signature."
+  },
+  {
+    "id": 62034,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "SRP: UI vs Business Logic",
+    "content": "Why separate UI logic from Business Logic?",
+    "explanation": "Because they change for different reasons. UI changes for aesthetics/UX. Logic changes for business rules. Mixing them (e.g., code-behind) violates SRP and makes the logic untestable."
+  },
+  {
+    "id": 62035,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "OCP: Decorator Pattern",
+    "content": "How does the Decorator Pattern satisfy OCP?",
+    "explanation": "You can add behavior (Logging, Caching, Encryption) to an existing class by wrapping it in a Decorator. The original class is untouched (Closed). The behavior is added by composing objects (Open)."
+  },
+  {
+    "id": 62036,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "LSP: Immutable Objects",
+    "content": "Does immutability help with LSP?",
+    "explanation": "Yes. The Square/Rectangle problem arises because of *mutable state* (setting Width changes Height). If Rectangle were immutable, `SetWidth` would return a *new* Rectangle. This avoids the side-effect inconsistency, making LSP easier to satisfy."
+  },
+  {
+    "id": 62037,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "ISP: Single Method Interfaces",
+    "content": "Are Single Method Interfaces (e.g., `IHandler<T>`) good?",
+    "explanation": "They represent the ultimate ISP compliance. They are highly composable and reusable (like functional programming). However, too many tiny interfaces can lead to 'Interface Explosion' and discovery issues."
+  },
+  {
+    "id": 62038,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "DIP: Volatile Dependencies",
+    "content": "What is a 'Volatile Dependency'?",
+    "explanation": "A dependency that is likely to change (Database, Network, Config, System Clock). DIP states you should NOT depend on these directly. Depend on abstractions over them to shield your core logic from their volatility."
+  },
+  {
+    "id": 62039,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "SOLID vs YAGNI",
+    "content": "Can SOLID conflict with YAGNI (You Ain't Gonna Need It)?",
+    "explanation": "Yes. Applying OCP/DIP upfront (creating interfaces/factories for everything) can be over-engineering if the code never changes. **Balance**: Start simple (YAGNI), but refactor to SOLID as soon as the second requirement change hits (Rule of Three)."
+  },
+  {
+    "id": 62040,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "SRP: Controller",
+    "content": "Does a massive Controller with 50 endpoints violate SRP?",
+    "explanation": "Yes. It likely handles too many distinct business flows. It should be split into smaller, focused controllers (e.g., `OrderReadController`, `OrderWriteController`) or delegate all logic to MediatR handlers."
+  },
+  {
+    "id": 62041,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "OCP: Template Method Pattern",
+    "content": "How does Template Method Pattern support OCP?",
+    "explanation": "The Base class defines the skeleton of the algorithm (invariant parts). It delegates specific steps to abstract methods. Derived classes override these steps to extend behavior without changing the algorithm's structure."
+  },
+  {
+    "id": 62042,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "LSP: Type Checking",
+    "content": "Is using `if (obj is SubType)` a violation of LSP?",
+    "explanation": "Often, yes. It implies the code knows about specific implementations. If you add a new SubType, this code breaks (or ignores it). Polymorphism should handle the behavior variation, not type checks."
+  },
+  {
+    "id": 62043,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "ISP: Breaking Changes",
+    "content": "How does ISP help with versioning?",
+    "explanation": "If you need to add a method, you can create a new interface `IAdvancedFeature` instead of modifying the existing `IBasicFeature`. New clients implement both; old clients are unaffected. It avoids breaking existing implementers."
+  },
+  {
+    "id": 62044,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "DIP: Static Methods",
+    "content": "Why are static methods (like `DateTime.Now`) hard to test?",
+    "explanation": "They are hard dependencies. You cannot swap `DateTime.Now` for a fixed time in unit tests. To follow DIP, you wrap it in an `IClock` abstraction, allowing you to inject a deterministic clock for testing."
+  },
+  {
+    "id": 62045,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "SRP: Constructor Over-injection",
+    "content": "What does a constructor with 15 parameters indicate?",
+    "explanation": "SRP Violation. The class is doing too much (Coupling). It likely needs to be broken down, or the dependencies should be grouped into aggregate services (e.g., `ICustomerContext` instead of 5 separate repositories)."
+  },
+  {
+    "id": 62046,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "OCP: Plugins",
+    "content": "How is a Plugin Architecture an example of OCP?",
+    "explanation": "The host application defines interfaces (`IPlugin`). 3rd party developers write DLLs that implement `IPlugin`. The host loads them at runtime. The host functionality is extended infinitely without recompiling the host."
+  },
+  {
+    "id": 62047,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "LSP: Contract Tests",
+    "content": "What are Contract Tests?",
+    "explanation": "Tests that run against the *Interface* (Abstraction), not just the implementation. They verify that *every* implementation of the interface (Base, Derived, Mock) adheres to the same rules (LSP compliance)."
+  },
+  {
+    "id": 62048,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "ISP: Interface Inheritance",
+    "content": "Should Interfaces inherit from other Interfaces?",
+    "explanation": "Use cautiously. It can recreate the Fat Interface problem. Prefer Composition of interfaces (`class C : IA, IB`) over Inheritance (`interface IC : IA, IB`) unless `IC` truly represents a cohesive superset concept."
+  },
+  {
+    "id": 62049,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "DIP: Main Method",
+    "content": "Where is the Dependency Graph constructed in DIP?",
+    "explanation": "In the **Composition Root** (usually `Program.cs` or `Startup.cs`). This is the entry point where concrete types are registered to interfaces. It is the only place allowed to be coupled to everything."
+  },
+  {
+    "id": 62050,
+    "category": "SOLID",
+    "difficulty": "Senior",
+    "title": "SOLID in Microservices",
+    "content": "How does SRP apply to Microservices?",
+    "explanation": "A Microservice should handle one Bounded Context (Business Capability). If a service handles 'Billing' and 'Video Encoding', it violates SRP at the architectural level. It should be split to allow independent scaling and deployment."
+  },
+  {
+    "id": 62051,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "SRP: Database Schema",
+    "content": "Does a table with 50 columns always violate SRP?",
+    "explanation": "Not necessarily, but likely. If the table mixes Customer Contact Info (Billing) with Customer Preferences (Marketing) and Login Credentials (Security), it violates SRP because changes from Marketing (e.g., adding 'Preferred Color') require modifying the same table/entity used by Security. It's better to split into `Customer`, `CustomerPreferences`, `CustomerAuth`."
+  },
+  {
+    "id": 62052,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "OCP: Strategy Pattern Complexity",
+    "content": "What is the trade-off of using Strategy Pattern for OCP?",
+    "explanation": "It increases **Code Complexity**. Instead of one class with an `if/else` block, you now have an Interface, a Context class, and 5 Strategy classes. For trivial logic that rarely changes, OCP can be over-engineering. Apply it only to volatile axes of change."
+  },
+  {
+    "id": 62053,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "LSP: Covariant Return Types (C# 9)",
+    "content": "How do C# 9 Covariant Return Types support LSP?",
+    "explanation": "They allow a derived method to return a **more specific** type than the base method. `Base.Clone() -> Asset`, `Derived.Clone() -> House`. This perfectly aligns with LSP: code expecting an `Asset` can handle a `House` without modification."
+  },
+  {
+    "id": 62054,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "ISP: Client-Specific Interfaces",
+    "content": "Why define interfaces in the Client's assembly instead of the Service's assembly?",
+    "explanation": "This is the **Interface Ownership** principle. If the Service defines the interface, the Client depends on the Service (and all its dependencies). If the Client defines the interface (`IStorage`), the Service implements it (Inversion). This ensures the interface contains *only* what the Client needs."
+  },
+  {
+    "id": 62055,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "DIP: Volatility",
+    "content": "What makes a dependency 'Volatile' and worthy of DIP?",
+    "explanation": "1. It is still under development (changing frequently). 2. It depends on external hardware/services (Database, Network). 3. It is non-deterministic (Time, Random). Stable dependencies (like `System.String` or pure logic libraries) do not need to be inverted."
+  },
+  {
+    "id": 62056,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "SRP: Vertical Slice Architecture",
+    "content": "How does Vertical Slice Architecture enforce SRP better than Layered Architecture?",
+    "explanation": "In Layered, a feature logic is smeared across Controller, Service, and Repository layers (SRP violation by scattering). In Vertical Slice, all logic for `PlaceOrder` is in **one** handler file. The code changes only for that specific feature request, satisfying SRP perfectly."
+  },
+  {
+    "id": 62057,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "OCP: Visitor Pattern",
+    "content": "How does the Visitor Pattern enable OCP for object hierarchies?",
+    "explanation": "It allows adding new operations (Visitors) to a set of classes without modifying those classes. You add `Accept(IVisitor)` once. Then you can create `XmlExportVisitor`, `JsonExportVisitor`, `ValidationVisitor` without touching the original domain objects."
+  },
+  {
+    "id": 62058,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "LSP: Null Return",
+    "content": "If Base method guarantees non-null, and Child returns null, is it LSP violation?",
+    "explanation": "Yes. It weakens the post-condition. Clients written against the Base will crash with `NullReferenceException`. You must use the **Null Object Pattern** or throw a specific exception if the child cannot return a valid value."
+  },
+  {
+    "id": 62059,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "ISP: Interface Explosion",
+    "content": "How do you avoid 'Interface Explosion' (thousands of 1-method interfaces)?",
+    "explanation": "Group methods by **Cohesion** and **Client Usage**. If `Read()` and `Write()` are always used together by 90% of clients, keep them in one interface. Only split if a significant subset of clients needs `Read()` but not `Write()`."
+  },
+  {
+    "id": 62060,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "DIP: Composition Root",
+    "content": "Is the Composition Root the only place that violates DIP?",
+    "explanation": "Yes, pragmatically. Somewhere in the app, you MUST glue the implementations to the interfaces (coupling). Doing this in `Startup.cs` (Composition Root) localizes the violation to a single entry point, keeping the rest of the application pure."
+  },
+  {
+    "id": 62061,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "SRP: Concurrency",
+    "content": "Does extracting threading logic into a separate class follow SRP?",
+    "explanation": "Yes. Business Logic (`CalculateTax`) and Threading Logic (`Task.Run`, locks) change for different reasons. Combining them makes the business logic hard to test (race conditions). Use a decorator or command executor to handle the threading aspect."
+  },
+  {
+    "id": 62062,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "OCP: Factory Method",
+    "content": "How does Factory Method support OCP?",
+    "explanation": "It delegates object creation to subclasses. If you need a different type of `Logger`, you subclass the Factory (`DbLoggerFactory`) instead of changing the `if/else` logic in the main code. The client code calls `CreateLogger()` and doesn't care about the concrete type."
+  },
+  {
+    "id": 62063,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "LSP: History Constraint",
+    "content": "What is the 'History Constraint' in LSP?",
+    "explanation": "A subclass should not modify the state of an object in a way that is illegal for the base class. If `Base` is Immutable, `Child` cannot add a method that mutates state (even if it adds new fields). This violates the expected invariant of immutability."
+  },
+  {
+    "id": 62064,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "ISP: Generic Repository",
+    "content": "Is a Generic Repository `IRepository<T>` a violation of ISP?",
+    "explanation": "Often, yes. It usually includes `Add`, `Remove`, `Get`, `GetAll`. A Read-Only service only needs `Get`. By forcing it to depend on `IRepository`, you expose `Delete` capabilities unnecessarily. Better to split `IReadRepository<T>` and `IWriteRepository<T>`."
+  },
+  {
+    "id": 62065,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "DIP: Pure Functions",
+    "content": "How do Pure Functions relate to DIP?",
+    "explanation": "Pure functions have no dependencies (no side effects, no IO). They essentially satisfy DIP by depending on *nothing*. Functional Core, Imperative Shell architecture pushes all dependencies to the boundary (Shell), keeping the Core pure."
+  },
+  {
+    "id": 62066,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "SRP: Cross-Cutting Concerns",
+    "content": "Why is AOP (Aspect Oriented Programming) the ultimate SRP enabler?",
+    "explanation": "It physically separates Logging, Caching, and Transaction management from the Business Logic code (into Attributes or Interceptors). The Business Class contains *zero* code related to infrastructure, achieving perfect SRP."
+  },
+  {
+    "id": 62067,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "OCP: Microservices",
+    "content": "How does Microservices architecture enable OCP at a system level?",
+    "explanation": "You add new functionality by deploying a **New Service** rather than redeploying the existing monolith. The system is open for extension (new services) but closed for modification (existing services stay running untouchable)."
+  },
+  {
+    "id": 62068,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "LSP: Validation Rules",
+    "content": "Can a Child class add stricter validation rules than Parent?",
+    "explanation": "No. This strengthens the precondition. If Parent accepts `\"abc\"`, Child cannot reject `\"abc\"`. However, Child *can* relax rules (accepting `null` where Parent threw) or strengthen post-conditions (guaranteeing non-null return)."
+  },
+  {
+    "id": 62069,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "ISP: Multiple Inheritance",
+    "content": "How does C# Interface Multiple Inheritance support ISP?",
+    "explanation": "It allows a class to implement many small interfaces (`IReadable`, `IWritable`, `IDisposable`). A client can then depend on *only* the specific slice (`IReadable`) it needs, ignoring the rest of the class's capabilities."
+  },
+  {
+    "id": 62070,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "DIP: Third Party Libraries",
+    "content": "Should you wrap 3rd party libraries (like AWS SDK) to follow DIP?",
+    "explanation": "Yes. If you use `AmazonS3Client` directly, your code is coupled to AWS. If AWS changes their API, you rewrite your app. Wrap it in `IFileStorage`. The adapter depends on AWS; your app depends on `IFileStorage`."
+  },
+  {
+    "id": 62071,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "SRP: Extension Methods",
+    "content": "Can Extension Methods fix SRP violations?",
+    "explanation": "Yes. If a `User` class has `SaveToDb()` logic, you can move that logic to an Extension Method `UserExtensions.SaveToDb(this User u)` (in a Data layer). The `User` class remains pure (DTO), and the persistence logic is moved to a more appropriate module."
+  },
+  {
+    "id": 62072,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "OCP: Abstract Factory",
+    "content": "How does Abstract Factory support OCP for families of objects?",
+    "explanation": "It defines an interface for creating related objects (e.g., `CreateButton`, `CreateWindow`). To add a new theme (MacOS), you create a new `MacFactory` implementing the interface. The client code uses the factory interface and automatically gets the new Mac objects."
+  },
+  {
+    "id": 62073,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "LSP: Read-Only Collections",
+    "content": "Why does `IReadOnlyList<T>` exist if we have `IEnumerable<T>`?",
+    "explanation": "`IEnumerable` only allows forward iteration. `IList` allows modification (Add/Remove). Passing `List<T>` to a method implies it *might* modify it. `IReadOnlyList<T>` is a stronger contract (LSP): it guarantees the consumer cannot modify the list via that reference."
+  },
+  {
+    "id": 62074,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "ISP: Header Interface Pattern",
+    "content": "What is the Header Interface anti-pattern?",
+    "explanation": "Creating an interface that mimics the class 1:1 (e.g., `Person` and `IPerson`) with all 20 methods. This adds no value (no decoupling) and violates ISP because clients usually don't need all 20 methods. Interfaces should be designed for clients, not derived from implementations."
+  },
+  {
+    "id": 62075,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "DIP: Mediator Pattern",
+    "content": "How does the Mediator Pattern (MediatR) implement DIP?",
+    "explanation": "The Controller depends on `IMediator` (Abstraction). The Handler depends on `IRequest`. They don't depend on each other. The Mediator connects them at runtime. This decouples the request sender from the request receiver entirely."
+  },
+  {
+    "id": 62076,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "SRP: Folder Structure",
+    "content": "How does 'Feature Folder' structure relate to SRP?",
+    "explanation": "Grouping files by Feature (`Features/Login/`) rather than Type (`Controllers/`, `Views/`) groups things that change together (High Cohesion). If the Login logic changes, you only touch the `Login` folder. SRP applies to modules/packages, not just classes."
+  },
+  {
+    "id": 62077,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "OCP: Template Method vs Strategy",
+    "content": "When to choose Template Method (Inheritance) over Strategy (Composition) for OCP?",
+    "explanation": "Use **Template Method** when the variations are minor and deeply integrated with the base class state. Use **Strategy** when the algorithm is completely distinct, reusable, and needs to be swapped dynamically at runtime."
+  },
+  {
+    "id": 62078,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "LSP: Testing",
+    "content": "How can you verify LSP compliance with Unit Tests?",
+    "explanation": "Write a generic test suite `TestBaseClass<T> where T : Base`. Run this suite against the Base implementation AND every Derived implementation. If a Derived class fails a test that passes for Base, it violates LSP."
+  },
+  {
+    "id": 62079,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "ISP: Facade Pattern",
+    "content": "Does the Facade Pattern help with ISP?",
+    "explanation": "Yes. A Facade can present a simplified, specific interface to a client, hiding the complex, fat interfaces of the subsystem behind it. It acts as an adapter to make the subsystem ISP-compliant for that client."
+  },
+  {
+    "id": 62080,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "DIP: Static Factory Methods",
+    "content": "Are static factory methods `Model.Create()` a violation of DIP?",
+    "explanation": "No, because they create *Data* (Entities/DTOs). DIP applies to *Services* (Behavior). You don't need to inject `IUserFactory` to create a simple `User` entity. `new User()` or `User.Create()` is fine for pure data objects."
+  },
+  {
+    "id": 62081,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "SRP: Code Reviews",
+    "content": "What is a red flag for SRP violation in a Code Review?",
+    "explanation": "If a Pull Request for \"Fixing the Login Bug\" also includes changes to the \"PDF Invoice Generator\", the class likely violates SRP (Coupling unrelated concerns). Also, large classes (>500 lines) are a heuristic indicator."
+  },
+  {
+    "id": 62082,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "OCP: Specification Pattern",
+    "content": "How does the Specification Pattern enable OCP for validation?",
+    "explanation": "Instead of `if (user.Age > 18 && user.HasLicense)`, you create `IsAdultSpec` and `HasLicenseSpec`. You can create complex rules by chaining specifications (`spec1.And(spec2)`). New rules are added as new classes without modifying the validator logic."
+  },
+  {
+    "id": 62083,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "LSP: Downcasting",
+    "content": "Why is checking `if (baseObj is Derived)` a smell for LSP violation?",
+    "explanation": "It implies `Base` abstraction is insufficient. The client needs specific behavior from `Derived` that `Base` doesn't provide. If you have to downcast, you are coupling to the implementation, breaking the substitutability promise."
+  },
+  {
+    "id": 62084,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "ISP: Events",
+    "content": "How do C# Events relate to ISP?",
+    "explanation": "Events allow clients to subscribe to *specific* notifications. A client doesn't need to implement a massive `INotifierCallback` interface; it just subscribes `+= OnSaved`. This is the ultimate granular interface."
+  },
+  {
+    "id": 62085,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "DIP: Clean Architecture",
+    "content": "What is the 'Dependency Rule' in Clean Architecture?",
+    "explanation": "Source code dependencies must only point **inward**, toward higher-level policies. The Core Domain knows nothing about the Database, UI, or Frameworks. The Frameworks depend on the Core."
+  },
+  {
+    "id": 62086,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "SRP: Unit Tests",
+    "content": "How does SRP affect Unit Testing?",
+    "explanation": "Classes following SRP are easy to test. You only need to mock a few dependencies. Classes violating SRP (God Objects) require massive setup, many mocks, and have fragile tests that break for unrelated reasons."
+  },
+  {
+    "id": 62087,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "OCP: Plugins vs Configuration",
+    "content": "Difference between OCP via Configuration vs Polymorphism.",
+    "explanation": "**Configuration** (`EnableFeatureX=true`) allows changing behavior by data. **Polymorphism** allows changing behavior by code structure. OCP usually refers to the latter (adding code), but Config is also a valid way to 'Extend' behavior without recompiling."
+  },
+  {
+    "id": 62088,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "LSP: Covariance in Arrays",
+    "content": "Why are C# Arrays dangerous regarding LSP?",
+    "explanation": "C# Arrays are **Covariant** but mutable. `object[] arr = new string[5];`. You can try `arr[0] = 5;` (int). The compiler allows it (because int is object), but it crashes at runtime (ArrayTypeMismatch). This violates LSP safety."
+  },
+  {
+    "id": 62089,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "ISP: Decorators",
+    "content": "Does a Decorator need to implement all methods of the interface?",
+    "explanation": "Yes. This is the downside of Decorators with Fat Interfaces. If `IStream` has 20 methods and you only want to intercept `Write`, you must delegate the other 19 manually. ISP reduces this burden."
+  },
+  {
+    "id": 62090,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "DIP: Database First vs Code First",
+    "content": "Which EF Core approach aligns better with DIP?",
+    "explanation": "**Code First**. You define your Domain Entities (POCOs) in the Core project. EF maps them to the DB. The DB depends on the Domain. **Database First** generates classes from the DB; your Domain ends up depending on the DB schema structure."
+  },
+  {
+    "id": 62091,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "SRP: The 'And' Rule",
+    "content": "What is the 'And' heuristic for SRP?",
+    "explanation": "Describe what the class does. If you use the word \"and\" (e.g., \"This class parses the file **and** saves it to DB\"), it likely violates SRP. It should be split."
+  },
+  {
+    "id": 62092,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "OCP: Multiple Dispatch",
+    "content": "How does the Visitor Pattern implement Double Dispatch?",
+    "explanation": "It dispatches based on the type of the **Visitor** AND the type of the **Element**. `element.Accept(visitor)` calls `visitor.Visit(this)`. This allows the correct method `Visit(ConcreteElement)` to be chosen at runtime, solving OCP for operations."
+  },
+  {
+    "id": 62093,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "LSP: Design by Contract",
+    "content": "What is 'Design by Contract'?",
+    "explanation": "A formal methodology where methods define Preconditions, Postconditions, and Invariants. LSP effectively requires that Derived classes accept weaker preconditions and provide stronger postconditions than the Base class."
+  },
+  {
+    "id": 62094,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "ISP: Config Objects",
+    "content": "Should you pass a huge `AppConfig` object to a service?",
+    "explanation": "No. That's an ISP violation. The service likely only needs `config.SmtpSettings`. Pass only the slice it needs (via `IOptions<SmtpSettings>`). This makes the service easier to test and reuse."
+  },
+  {
+    "id": 62095,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "DIP: Static Constants",
+    "content": "Do you need to inject Constants (Math.PI)?",
+    "explanation": "No. Constants are stable and universal. Depending on `Math.PI` is fine. DIP applies to volatile, behavior-changing dependencies."
+  },
+  {
+    "id": 62096,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "SOLID in Functional Programming",
+    "content": "Do SOLID principles apply to Functional Programming?",
+    "explanation": "Yes, but differently. **SRP**: Functions do one thing. **OCP**: Higher-Order Functions / Composition. **LSP**: Type Classes / Monads. **ISP**: Small function signatures. **DIP**: Passing functions as arguments (Parameter Injection)."
+  },
+  {
+    "id": 62097,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "Refactoring to SOLID",
+    "content": "Should you refactor legacy code to SOLID immediately?",
+    "explanation": "No. **Refactor only when you touch it**. Applying SOLID to stable legacy code introduces regression risk for zero business value. Apply it iteratively as you modify features."
+  },
+  {
+    "id": 62098,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "God Object vs Mediator",
+    "content": "When does a Mediator become a God Object?",
+    "explanation": "If the Mediator contains **Business Logic** inside itself (deciding *how* to handle requests) rather than just dispatching/coordinating. A Mediator should be a dumb pipe connecting components."
+  },
+  {
+    "id": 62099,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "Over-Engineering",
+    "content": "When is SOLID harmful?",
+    "explanation": "When applied dogmatically to simple CRUD apps. Creating Interfaces, Factories, and Strategies for a \"Hello World\" controller is **Premature Optimization**. Complexity must be justified by the need for flexibility."
+  },
+  {
+    "id": 62100,
+    "category": "SOLID",
+    "difficulty": "Principal",
+    "title": "SOLID Summary",
+    "content": "What is the ultimate goal of SOLID?",
+    "explanation": "To manage **Dependencies**. All 5 principles are strategies to organize code dependencies so that changes are localized, safe, and cheap."
   }
 ];
 
