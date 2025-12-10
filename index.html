@@ -459,7 +459,7 @@
             );
         };
 
-        const SettingsModal = ({ isOpen, onClose, onExport, onImport }) => {
+        const SettingsModal = ({ isOpen, onClose, onExport, onImport, useAIStudio, onToggleAIStudio }) => {
             if (!isOpen) return null;
 
             return (
@@ -469,6 +469,18 @@
 
                         <div className="space-y-6">
 
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Preferences</label>
+                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-zinc-800 rounded-xl">
+                                    <span className="text-sm font-bold text-slate-700 dark:text-zinc-300">Ask AI opens AI Studio</span>
+                                    <button
+                                        onClick={onToggleAIStudio}
+                                        className={`w-12 h-6 rounded-full p-1 transition-colors ${useAIStudio ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                                    >
+                                        <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${useAIStudio ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+                            </div>
 
                             <div className="pt-4 border-t border-slate-100 dark:border-zinc-800">
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Data Management</label>
@@ -566,6 +578,7 @@
                 setTimeout(() => setToast(null), 3000);
             };
             const [darkMode, setDarkMode] = useState(false);
+            const [useAIStudio, setUseAIStudio] = useState(false);
 
             useEffect(() => {
                 // 1. Load Data
@@ -581,6 +594,7 @@
                 const w = localStorage.getItem('ss_wrongQueue');
                 const s = localStorage.getItem('ss_streak');
                 const d = localStorage.getItem('ss_dark');
+                const ai = localStorage.getItem('ss_use_ai_studio');
 
                 if (h) setHistory(JSON.parse(h));
                 if (b) setBookmarks(JSON.parse(b));
@@ -599,6 +613,10 @@
                     setDarkMode(true);
                     document.documentElement.classList.add('dark');
                 }
+
+                if (ai === 'true') {
+                    setUseAIStudio(true);
+                }
             }, []);
 
             const toggleDarkMode = () => {
@@ -607,6 +625,12 @@
                 if (newVal) document.documentElement.classList.add('dark');
                 else document.documentElement.classList.remove('dark');
                 localStorage.setItem('ss_dark', newVal);
+            };
+
+            const toggleAIStudio = () => {
+                const newVal = !useAIStudio;
+                setUseAIStudio(newVal);
+                localStorage.setItem('ss_use_ai_studio', newVal);
             };
 
             const updateNotes = (cardId, text) => {
@@ -811,14 +835,14 @@
                 switch (view) {
                     case 'home': return <HomeView cards={cards} history={history} bookmarks={bookmarks} streak={streak} wrongQueue={wrongQueue} darkMode={darkMode} toggleDarkMode={toggleDarkMode} onStart={startSession} onNav={setView} xp={xp} level={level} levelProgress={levelProgress} setShowSettings={setShowSettings} setShowCreator={setShowCreator} srsData={srsData} updateStreak={updateStreak} />;
                     case 'browser': return <BrowserView cards={cards} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onNav={setView} />;
-                    case 'play': return <PlayView deck={activeDeck} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onFinish={handleSessionComplete} onNav={setView} history={history} showToast={showToast} addXp={addXp} onSrsReview={handleSrsReview} notes={notes} onUpdateNote={updateNotes} />;
+                    case 'play': return <PlayView deck={activeDeck} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onFinish={handleSessionComplete} onNav={setView} history={history} showToast={showToast} addXp={addXp} onSrsReview={handleSrsReview} notes={notes} onUpdateNote={updateNotes} useAIStudio={useAIStudio} />;
                     default: return <HomeView />;
                 }
             };
 
             return (
                 <div className="max-w-md mx-auto min-h-screen bg-white dark:bg-zinc-950 shadow-2xl relative font-sans text-slate-800 dark:text-zinc-200">
-                    <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} onExport={exportData} onImport={importData} />
+                    <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} onExport={exportData} onImport={importData} useAIStudio={useAIStudio} onToggleAIStudio={toggleAIStudio} />
                     {showCreator && <CardCreatorView categories={[...new Set(cards.map(c => c.category))]} onClose={() => setShowCreator(false)} onSave={addCustomCard} />}
 
                     {renderView()}
@@ -1210,7 +1234,7 @@
             );
         };
 
-        const PlayView = ({ deck, bookmarks, onToggleBookmark, onFinish, onNav, history, showToast, addXp, onSrsReview, notes, onUpdateNote }) => {
+        const PlayView = ({ deck, bookmarks, onToggleBookmark, onFinish, onNav, history, showToast, addXp, onSrsReview, notes, onUpdateNote, useAIStudio }) => {
             const [index, setIndex] = useState(0);
             const [isFlipped, setIsFlipped] = useState(false);
             const [localLearned, setLocalLearned] = useState([]);
@@ -1442,7 +1466,14 @@
                 e.stopPropagation();
                 const prompt = `Topic: ${card.title}\n\nQuestion:\n${card.content}\n\nAnswer:\n${card.explanation}\n\nPlease explain this interview question and answer in detail and explain why it matters for a senior dev.`;
                 navigator.clipboard.writeText(prompt);
-                showToast("Full context copied to clipboard!");
+
+                if (useAIStudio) {
+                    const encoded = encodeURIComponent(prompt);
+                    window.open(`https://aistudio.google.com/prompts/new_chat?prompt=${encoded}`, '_blank');
+                    showToast("Opening AI Studio...");
+                } else {
+                    showToast("Prompt copied to clipboard!");
+                }
             };
 
             if (!card) return null;
