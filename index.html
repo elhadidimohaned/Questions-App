@@ -161,6 +161,33 @@
             margin-bottom: 0.75em;
         }
 
+        /* Fix Code Overflow */
+        .markdown-body pre {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            max-width: 100%;
+        }
+
+        .dark .markdown-body pre {
+            background: #18181b;
+            /* zinc-900 */
+        }
+
+        .markdown-body code {
+            font-family: monospace;
+            font-size: 0.9em;
+            word-break: break-word;
+            /* Wrap long inline code */
+        }
+
+        .markdown-body pre code {
+            word-break: normal;
+            /* Don't wrap blocks, scroll instead */
+            white-space: pre;
+        }
+
         .markdown-body code:not([class*="language-"]) {
             background: rgba(100, 116, 139, 0.1);
             padding: 2px 4px;
@@ -286,7 +313,9 @@
             ChevronDown: (p) => <Icon {...p} path={<path d="m6 9 6 6 6-6" />} />,
             Book: (p) => <Icon {...p} path={<><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>} />,
             Trash: (p) => <Icon {...p} path={<><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></>} />,
-            Filter: (p) => <Icon {...p} path={<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />} />
+            Filter: (p) => <Icon {...p} path={<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />} />,
+            Check: (p) => <Icon {...p} path={<polyline points="20 6 9 17 4 12" />} />,
+            RotateCcw: (p) => <Icon {...p} path={<><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></>} />,
         };
 
         const SimpleConfetti = () => {
@@ -2708,10 +2737,10 @@
                         </div>
                     </div>
 
-                    {/* Card Container - CENTERED but Scrollable */}
-                    <div className="flex-1 flex flex-col items-center justify-start pt-10 pb-32 overflow-y-auto overflow-x-hidden">
+                    {/* Card Container - CENTERED but Scrollable (Safe Centering with my-auto) */}
+                    <div className="flex-1 flex flex-col items-center pt-4 pb-20 overflow-y-auto overflow-x-hidden no-scrollbar">
                         <div
-                            className={`relative w-full max-w-sm transition-transform duration-75 cursor-pointer ${cardAnim}`}
+                            className={`relative w-full max-w-sm transition-transform duration-75 cursor-pointer my-auto ${cardAnim}`}
                             style={cardAnim ? {} : style}
                             onClick={() => setIsFlipped(!isFlipped)}
                             onTouchStart={onTouchStart}
@@ -2720,7 +2749,14 @@
                         >
                             {!isFlipped ? (
                                 /* FRONT */
-                                <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-xl border border-slate-200 dark:border-zinc-800 flex flex-col min-h-[50vh] overflow-hidden">
+                                <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-xl border border-slate-200 dark:border-zinc-800 flex flex-col min-h-[50vh] overflow-hidden relative">
+                                    {/* Swipe Overlays */}
+                                    <div className="absolute top-8 right-8 z-20 pointer-events-none" style={{ opacity: Math.max(0, -swipeOffset / 100) }}>
+                                        <div className="border-4 border-red-500 rounded-xl px-4 py-2 text-red-500 font-black text-2xl tracking-widest uppercase -rotate-12 bg-white/10 backdrop-blur-sm">Again</div>
+                                    </div>
+                                    <div className="absolute top-8 left-8 z-20 pointer-events-none" style={{ opacity: Math.max(0, swipeOffset / 100) }}>
+                                        <div className="border-4 border-green-500 rounded-xl px-4 py-2 text-green-500 font-black text-2xl tracking-widest uppercase rotate-12 bg-white/10 backdrop-blur-sm">Good</div>
+                                    </div>
                                     <div className="bg-slate-50 dark:bg-zinc-800/50 p-6 border-b border-slate-100 dark:border-zinc-800 text-center select-none">
                                         <span className="text-[10px] px-2 py-1 rounded-full font-bold tracking-wider uppercase bg-slate-200 text-slate-600 dark:bg-zinc-700 dark:text-zinc-300 mr-2">{card.category}</span>
                                         <span className={`text-[10px] px-2 py-1 rounded-full font-bold tracking-wider uppercase ${card.difficulty === 'Senior' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : card.difficulty === 'Principal' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-green-100 text-green-600'}`}>{card.difficulty || 'General'}</span>
@@ -2791,17 +2827,17 @@
                             )}
                         </div>
 
-                        {/* Navigation Buttons */}
-                        <div className="p-8 pb-12 flex justify-center gap-6 z-10 pointer-events-none">
-                            <div className="absolute top-1/2 left-4 -translate-y-1/2 opacity-20 pointer-events-none"><Icons.X size={48} className="text-red-500" /></div>
-                            <div className="absolute top-1/2 right-4 -translate-y-1/2 opacity-20 pointer-events-none"><Icons.CheckCircle size={48} className="text-green-500" /></div>
-
-                            {!isFlipped && (
-                                <div className="flex gap-4 items-center">
-                                    <span className="text-xs font-bold text-slate-400 opacity-50"><Icon path={<path d="m15 18-6-6 6-6" />} size={16} /> Swipe Left</span>
-                                    <span className="text-xs font-bold text-slate-400 opacity-50">Swipe Right <Icon path={<path d="m9 18 6-6-6-6" />} size={16} /></span>
-                                </div>
-                            )}
+                        {/* Action Buttons (Footer) */}
+                        <div className="p-6 pb-12 flex justify-center gap-8 z-10">
+                            <button onClick={(e) => { e.stopPropagation(); handleSrs(1); }} className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-full shadow-xl shadow-red-500/10 text-red-500 flex items-center justify-center hover:scale-105 active:scale-95 transition-all border border-slate-100 dark:border-zinc-700">
+                                <Icons.X size={32} strokeWidth={3} />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); setIsFlipped(!isFlipped); }} className="w-12 h-12 bg-white dark:bg-zinc-800 rounded-full shadow-lg text-indigo-500 flex items-center justify-center hover:scale-105 active:scale-95 transition-all border border-slate-100 dark:border-zinc-700">
+                                <Icons.RotateCcw size={20} strokeWidth={2.5} />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); handleSrs(2); }} className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-full shadow-xl shadow-green-500/10 text-green-500 flex items-center justify-center hover:scale-105 active:scale-95 transition-all border border-slate-100 dark:border-zinc-700">
+                                <Icons.Check size={32} strokeWidth={3} />
+                            </button>
                         </div>
                     </div>
 
