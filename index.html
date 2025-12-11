@@ -2224,6 +2224,52 @@
             );
         };
 
+        const CommuterGuideModal = ({ isOpen, onClose, onConfirm }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 bg-black/80 z-[70] flex items-center justify-center p-6 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 dark:border-zinc-800 animate-in zoom-in-95">
+                        <div className="flex flex-col items-center text-center mb-6">
+                            <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/40 rounded-full flex items-center justify-center mb-4 text-indigo-600 dark:text-indigo-400">
+                                <Icons.Headphones size={32} />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">Commuter Mode</h3>
+                            <p className="text-sm text-slate-500 dark:text-zinc-400">Review hands-free while driving or walking. The app will read cards to you.</p>
+                        </div>
+
+                        <div className="bg-slate-50 dark:bg-zinc-800/50 rounded-xl p-4 mb-6 space-y-3 text-left">
+                            <div className="flex items-center gap-3">
+                                <Icons.Mic size={18} className="text-green-500 shrink-0" />
+                                <div>
+                                    <div className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase">Say "Next" / "Good"</div>
+                                    <div className="text-[10px] text-slate-400">Mark as Good (+10 XP)</div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Icons.Mic size={18} className="text-orange-500 shrink-0" />
+                                <div>
+                                    <div className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase">Say "Hard" / "Again"</div>
+                                    <div className="text-[10px] text-slate-400">Mark as Hard + Repeat</div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Icons.Mic size={18} className="text-indigo-500 shrink-0" />
+                                <div>
+                                    <div className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase">Say "Flip" / "Answer"</div>
+                                    <div className="text-[10px] text-slate-400">Reveal the answer</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={onClose} className="flex-1 py-3.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">Cancel</button>
+                            <button onClick={onConfirm} className="flex-1 py-3.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition-transform active:scale-95">Start Driving 🚗</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const PlayView = ({ deck, bookmarks, onToggleBookmark, onFinish, onNav, history, showToast, addXp, onSrsReview, notes, onUpdateNote, useAIStudio, voiceName, srsSettings }) => {
             const [index, setIndex] = useState(() => parseInt(localStorage.getItem('ss_session_index')) || 0);
 
@@ -2236,6 +2282,7 @@
 
             // Modes
             const [commuterMode, setCommuterMode] = useState(false);
+            const [showCommuterGuide, setShowCommuterGuide] = useState(false);
             const [interviewMode, setInterviewMode] = useState(false);
 
             // Interview State
@@ -2245,6 +2292,7 @@
             const mediaRecorder = useRef(null);
             const audioChunks = useRef([]);
             const isProcessing = useRef(false);
+            const handleSrsRef = useRef(null); // Ref for Voice Command Stability
 
             const card = deck[index] || {};
 
@@ -2263,49 +2311,35 @@
             const uttr = useRef(new SpeechSynthesisUtterance());
 
             // Commuter Logic
+            // Commuter Logic - Reactive (Reads current state, no auto-advance)
             useEffect(() => {
-                if (!commuterMode) {
+                if (!commuterMode || !card) {
                     synth.cancel();
                     return;
                 }
 
-                // Sequence: Read Q -> Wait 5s -> Read A -> Wait 2s -> Next
-                const readCard = () => {
-                    if (!card) return;
+                // Configure Voice
+                if (voiceName) {
+                    const voices = synth.getVoices();
+                    const v = voices.find(vo => vo.name === voiceName);
+                    if (v) uttr.current.voice = v;
+                }
 
-                    // Configure Voice
-                    if (voiceName) {
-                        const voices = synth.getVoices();
-                        const v = voices.find(vo => vo.name === voiceName);
-                        if (v) uttr.current.voice = v;
-                    }
+                // Determine Text based on state
+                const text = isFlipped
+                    ? `Answer. ${card.explanation}`
+                    : `Question. ${card.title}. ${card.content}`;
 
-                    // Step 1: Read Question
-                    uttr.current.text = `Question. ${card.title}. ${card.content}`;
-                    uttr.current.onend = () => {
-                        // Step 2: Wait 5s
-                        setTimeout(() => {
-                            if (!commuterMode) return;
-                            // Step 3: Flip & Read Answer
-                            setIsFlipped(true);
-                            uttr.current.text = `Answer. ${card.explanation}`;
-                            uttr.current.onend = () => {
-                                // Step 4: Next Card
-                                setTimeout(() => {
-                                    if (!commuterMode) return;
-                                    handleSrs(2); // Auto-mark "Good"
-                                }, 2000);
-                            };
-                            synth.speak(uttr.current);
-                        }, 5000);
-                    };
-                    synth.speak(uttr.current);
-                };
+                uttr.current.text = text;
+                uttr.current.onend = null; // No auto-advance scripts
 
-                readCard();
+                // Speak (Debounce slightly to allow state settlement?)
+                // Actually synth.cancel() handles it.
+                synth.cancel();
+                synth.speak(uttr.current);
 
                 return () => synth.cancel();
-            }, [commuterMode, index, voiceName]);
+            }, [commuterMode, index, isFlipped, voiceName]);
 
             // Interview Timer
             useEffect(() => {
@@ -2375,47 +2409,7 @@
                 }
             };
 
-            // Hands-Free Voice Commands
-            useEffect(() => {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!commuterMode || !SpeechRecognition) return;
-
-                const recognition = new SpeechRecognition();
-                recognition.continuous = true;
-                recognition.interimResults = false;
-                recognition.lang = 'en-US';
-
-                recognition.onresult = (event) => {
-                    const last = event.results.length - 1;
-                    const command = event.results[last][0].transcript.trim().toLowerCase();
-
-                    // Simple fuzzy matching
-                    if (command.includes('flip') || command.includes('answer') || command.includes('reveal')) {
-                        setIsFlipped(true);
-                        showToast("🎤 Flip");
-                    } else if (command.includes('next') || command.includes('good') || command.includes('pass') || command.includes('easy')) {
-                        handleSrs(2); // Treat as Good/Next
-                        showToast("🎤 Next");
-                    } else if (command.includes('hard') || command.includes('again') || command.includes('difficult')) {
-                        handleSrs(1);
-                        showToast("🎤 Hard");
-                    }
-                };
-
-                recognition.onerror = (e) => {
-                    console.log("Recognition error", e);
-                    // Silently fail or retry? Browsers are strict.
-                };
-
-                try {
-                    recognition.start();
-                    showToast("🎤 Voice Control Active");
-                } catch (e) { console.error("Rec start failed", e); }
-
-                return () => {
-                    try { recognition.stop(); } catch (e) { }
-                };
-            }, [commuterMode, index]); // Restart on card change to ensure fresh state closure
+            // Voice Commands moved below handleSrs to access latest closure via Ref
 
             const isLast = index === deck.length - 1;
             const hasLearned = history.includes(card?.id) || localLearned.includes(card?.id);
@@ -2504,6 +2498,88 @@
                 }, 200);
             };
 
+            // Update Ref for Voice
+            handleSrsRef.current = handleSrs;
+
+            // Robust Voice Command Effect
+            useEffect(() => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!commuterMode || !SpeechRecognition) return;
+
+                const recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                // Track active state to manage restarts
+                let isActive = true;
+
+                recognition.onresult = (event) => {
+                    const last = event.results.length - 1;
+                    const result = event.results[last][0];
+                    const command = result.transcript.trim().toLowerCase();
+                    const confidence = result.confidence;
+
+                    // Filter out noise/coughs (Adjusted Confidence Threshold)
+                    if (confidence < 0.6) {
+                        showToast(`🎤 Low conf: "${command}" (${(confidence * 100).toFixed(0)}%)`);
+                        return;
+                    }
+
+                    // Tokenize
+                    const words = command.split(/\s+/);
+
+                    let matched = false;
+                    // Commands
+                    if (words.some(w => ['flip', 'answer', 'reveal', 'question', 'back'].includes(w))) {
+                        setIsFlipped(prev => !prev);
+                        showToast(`🎤 Flip ("${command}")`);
+                        matched = true;
+                    }
+                    else if (words.some(w => ['next', 'good', 'pass', 'easy'].includes(w))) {
+                        if (handleSrsRef.current) handleSrsRef.current(2);
+                        showToast(`🎤 Next ("${command}")`);
+                        matched = true;
+                    }
+                    else if (words.some(w => ['hard', 'again', 'difficult', 'bad'].includes(w))) {
+                        if (handleSrsRef.current) handleSrsRef.current(1);
+                        showToast(`🎤 Hard ("${command}")`);
+                        matched = true;
+                    }
+
+                    if (!matched) {
+                        showToast(`🎤 Ignored: "${command}"`);
+                    }
+                };
+
+
+
+                recognition.onend = () => {
+                    // console.log("Speech recognition ended");
+                    // We CANNOT auto-restart on local files (file://) because it triggers a permission prompt every time.
+                    // If on HTTPS/Localhost, we could, but better safe for this specific user case.
+                    if (isActive && commuterMode) {
+                        showToast("🎤 Mic timeout. Tap headset to resume.");
+                        setCommuterMode(false); // Turn off mode to update UI
+                    }
+                };
+
+                recognition.onerror = (e) => {
+                    if (e.error === 'not-allowed') {
+                        isActive = false;
+                        showToast("🎤 Mic Permission Denied");
+                    }
+                };
+
+                try { recognition.start(); showToast("🎤 Listening..."); }
+                catch (e) { console.error("Start Failed", e); }
+
+                return () => {
+                    isActive = false;
+                    try { recognition.stop(); } catch (e) { }
+                };
+            }, [commuterMode]); // Stable! No index dependency means no constant restarting.
+
             useEffect(() => {
                 const handleKey = (e) => {
                     if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
@@ -2582,7 +2658,7 @@
 
             const copyPrompt = (e) => {
                 e.stopPropagation();
-                const prompt = `Topic: ${card.title}\n\nQuestion:\n${card.content}\n\nAnswer:\n${card.explanation}\n\nPlease explain this interview question and answer in detail and explain why it matters for a senior dev.`;
+                const prompt = `Topic: ${card.title} \n\nQuestion: \n${card.content} \n\nAnswer: \n${card.explanation} \n\nPlease explain this interview question and answer in detail and explain why it matters for a senior dev.`;
                 navigator.clipboard.writeText(prompt);
 
                 if (useAIStudio) {
@@ -2615,7 +2691,10 @@
                             {interviewMode ? <span className={`text-${timer < 30 ? 'red' : 'indigo'}-500`}>{Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}</span> : `${index + 1} / ${deck.length}`}
                         </div>
                         <div className="flex gap-2">
-                            <button onClick={() => { setCommuterMode(!commuterMode); setInterviewMode(false); }} className={`p-2 rounded-full ${commuterMode ? 'bg-indigo-600 text-white' : 'text-slate-300 dark:text-zinc-600'}`}><Icons.Headphones size={20} /></button>
+                            <button onClick={() => {
+                                if (commuterMode) setCommuterMode(false);
+                                else { setInterviewMode(false); setShowCommuterGuide(true); }
+                            }} className={`p-2 rounded-full ${commuterMode ? 'bg-indigo-600 text-white' : 'text-slate-300 dark:text-zinc-600'}`}><Icons.Headphones size={20} /></button>
                             <button onClick={toggleInterview} className={`p-2 rounded-full ${interviewMode ? 'bg-red-500 text-white animate-pulse' : 'text-slate-300 dark:text-zinc-600'}`}><Icons.Mic size={20} /></button>
                             <button onClick={() => onToggleBookmark(card.id)} className={bookmarks.includes(card.id) ? "text-yellow-400 p-2" : "text-slate-300 dark:text-zinc-600 p-2"}><Icons.Bookmark fill={bookmarks.includes(card.id) ? "currentColor" : "none"} /></button>
                         </div>
@@ -2717,6 +2796,13 @@
                             )}
                         </div>
                     </div>
+
+                    {/* Modals */}
+                    <CommuterGuideModal
+                        isOpen={showCommuterGuide}
+                        onClose={() => setShowCommuterGuide(false)}
+                        onConfirm={() => { setShowCommuterGuide(false); setCommuterMode(true); }}
+                    />
                 </div>
             );
         };
