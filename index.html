@@ -2555,12 +2555,17 @@
 
 
                 recognition.onend = () => {
-                    // console.log("Speech recognition ended");
-                    // We CANNOT auto-restart on local files (file://) because it triggers a permission prompt every time.
-                    // If on HTTPS/Localhost, we could, but better safe for this specific user case.
-                    if (isActive && commuterMode) {
+                    if (!isActive || !commuterMode) return;
+
+                    // Protocol Check: Auto-restart only on HTTP/HTTPS to avoid file:// permission loops
+                    const isWeb = window.location.protocol.startsWith('http');
+
+                    if (isWeb) {
+                        // console.log("Auto-restarting Mic...");
+                        try { recognition.start(); } catch (e) { }
+                    } else {
                         showToast("🎤 Mic timeout. Tap headset to resume.");
-                        setCommuterMode(false); // Turn off mode to update UI
+                        setCommuterMode(false);
                     }
                 };
 
@@ -2568,6 +2573,9 @@
                     if (e.error === 'not-allowed') {
                         isActive = false;
                         showToast("🎤 Mic Permission Denied");
+                    } else if (e.error !== 'no-speech') {
+                        // Show other errors: network, audio-capture, etc.
+                        showToast(`🎤 Error: ${e.error}`);
                     }
                 };
 
