@@ -282,8 +282,11 @@
             Mic: (p) => <Icon {...p} path={<><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="23" /><line x1="8" x2="16" y1="23" y2="23" /></>} />,
             Headphones: (p) => <Icon {...p} path={<><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" /></>} />,
             Stop: (p) => <Icon {...p} path={<rect x="6" y="6" width="12" height="12" rx="2" />} />,
+            Edit: (p) => <Icon {...p} path={<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />} />,
             ChevronDown: (p) => <Icon {...p} path={<path d="m6 9 6 6 6-6" />} />,
-            Book: (p) => <Icon {...p} path={<><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>} />
+            Book: (p) => <Icon {...p} path={<><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>} />,
+            Trash: (p) => <Icon {...p} path={<><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></>} />,
+            Filter: (p) => <Icon {...p} path={<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />} />
         };
 
         const SimpleConfetti = () => {
@@ -332,6 +335,22 @@
             return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-[100]" />;
         };
 
+        const ConfirmationModal = ({ isOpen, onClose, onConfirm, message }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
+                    <div className="bg-white dark:bg-zinc-900 w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-pop border border-slate-100 dark:border-zinc-800" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Are you sure?</h3>
+                        <p className="text-sm text-slate-500 dark:text-zinc-400 mb-6">{message}</p>
+                        <div className="flex gap-3">
+                            <button onClick={onClose} className="flex-1 py-3 rounded-xl font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors">Cancel</button>
+                            <button onClick={() => { onConfirm(); onClose(); }} className="flex-1 py-3 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 transition-colors">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const SessionSetupModal = ({ isOpen, onClose, categories, onStart, totalCards }) => {
             if (!isOpen) return null;
             const [mode, setMode] = useState('smart'); // smart, sequential
@@ -365,9 +384,19 @@
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Number of Questions</label>
                                 <input type="number" value={range.limit} onChange={e => setRange({ ...range, limit: parseInt(e.target.value) })} className="w-full bg-slate-50 dark:bg-zinc-800 border-none rounded-lg p-3 text-center font-mono font-bold" placeholder="e.g. 15" />
                                 <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                                    <span>Available: {totalCards}</span>
+                                    <span>Selected: {totalCards}</span>
                                     <span>Default: 15</span>
                                 </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-zinc-800 rounded-xl">
+                                <span className="text-sm font-bold text-slate-700 dark:text-zinc-300">Due Reviews Only</span>
+                                <button
+                                    onClick={() => setRange(prev => ({ ...prev, dueOnly: !prev.dueOnly }))}
+                                    className={`w-12 h-6 rounded-full p-1 transition-colors ${range.dueOnly ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                                >
+                                    <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${range.dueOnly ? 'translate-x-6' : 'translate-x-0'}`} />
+                                </button>
                             </div>
 
                             <button onClick={() => onStart(mode, range)} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-500/30 transition-all active:scale-95">
@@ -435,13 +464,18 @@
             );
         };
 
-        const CardCreatorView = ({ onClose, onSave, categories }) => {
-            const [form, setForm] = useState({ title: '', category: categories[0] || 'General', difficulty: 'Senior', content: '', explanation: '' });
+        const CardCreatorView = ({ onClose, onSave, categories, initialData = null }) => {
+            const [form, setForm] = useState(initialData || { title: '', category: categories[0] || 'General', difficulty: 'Senior', content: '', explanation: '' });
             const [viewMode, setViewMode] = useState('write'); // write, preview
 
             const handleSubmit = () => {
                 if (!form.title || !form.content) return alert("Title and Content are required.");
-                onSave({ ...form, id: Date.now().toString() }); // Simple ID
+                const card = {
+                    ...form,
+                    id: initialData ? initialData.id : Date.now(), // Preserve ID if editing
+                    timestamp: Date.now()
+                };
+                onSave(card);
             };
 
             return (
@@ -563,8 +597,18 @@
                     req.onsuccess = () => resolve(req.result);
                     req.onerror = () => reject(req.error);
                 });
+            },
+            delete: async (cardId) => {
+                const db = await AudioDB.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('recordings', 'readwrite');
+                    tx.objectStore('recordings').delete(cardId);
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
             }
         };
+
 
         const CustomCardDB = {
             dbName: 'SeniorSwipeCards',
@@ -981,6 +1025,7 @@
             const [customCards, setCustomCards] = useState([]);
             const [showSettings, setShowSettings] = useState(false);
             const [showCreator, setShowCreator] = useState(false);
+            const [editingCard, setEditingCard] = useState(null);
 
             // Leveling Logic
             const level = Math.floor(Math.sqrt(xp / 25)) + 1;
@@ -1043,8 +1088,11 @@
 
                         setCustomCards(dbCards);
                         setCards(prev => {
-                            // Merge ensuring no loss of external data, avoid duplicates if called multiple times (though useEffect is []
-                            return [...externalData, ...dbCards];
+                            // Merge Strategy: DB Cards override External Data (Seed)
+                            const cardMap = new Map();
+                            externalData.forEach(c => cardMap.set(String(c.id), c));
+                            dbCards.forEach(c => cardMap.set(String(c.id), c)); // Overwrite if exists
+                            return Array.from(cardMap.values());
                         });
                     } catch (e) {
                         console.error("Custom Card Load Error", e);
@@ -1224,6 +1272,23 @@
                 showToast("Card Created!");
             };
 
+            const updateCard = async (card) => {
+                await CustomCardDB.save(card); // Save/Overwrite
+                // Update State (Handle Merge Logic again essentially, or just iterate)
+                setCards(prev => prev.map(c => String(c.id) === String(card.id) ? card : c));
+                setCustomCards(prev => {
+                    const idx = prev.findIndex(c => String(c.id) === String(card.id));
+                    if (idx > -1) {
+                        const copy = [...prev];
+                        copy[idx] = card;
+                        return copy;
+                    }
+                    return [...prev, card];
+                });
+                setShowCreator(false);
+                showToast("Card Updated!");
+            };
+
             const exportData = () => {
                 const data = { history, bookmarks, xp, streak, customCards, srsData, wrongQueue };
                 const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
@@ -1301,6 +1366,21 @@
 
                 if (pool.length === 0) { showToast("No available cards."); return; }
 
+                // Strict SRS (Due Only)
+                if (range && range.dueOnly) {
+                    const duePool = pool.filter(c => {
+                        const srs = srsData[c.id];
+                        return srs && Date.now() > srs.nextReview;
+                    });
+                    if (duePool.length > 0) {
+                        pool = duePool;
+                    } else {
+                        // Optional: Fallback or Alert
+                        showToast("No cards due for review! Starting standard session.");
+                        // We just proceed with 'pool' as is (standard smart shuffle fallback)
+                    }
+                }
+
                 // Apply Sorting
                 let finalDeck = [];
                 if (sortMode === 'sequential') {
@@ -1340,7 +1420,7 @@
             const renderView = () => {
                 switch (view) {
                     case 'home': return <HomeView cards={cards} history={history} bookmarks={bookmarks} streak={streak} wrongQueue={wrongQueue} darkMode={darkMode} toggleDarkMode={toggleDarkMode} onStart={startSession} onNav={setView} xp={xp} level={level} levelProgress={levelProgress} setShowSettings={setShowSettings} setShowCreator={setShowCreator} srsData={srsData} updateStreak={updateStreak} />;
-                    case 'browser': return <BrowserView cards={cards} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onNav={setView} history={history} />;
+                    case 'browser': return <BrowserView cards={cards} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onNav={setView} history={history} onEdit={(card) => { setEditingCard(card); setShowCreator(true); }} />;
                     case 'notes': return <NotesView cards={cards} notes={notes} onNav={setView} />;
                     case 'play': return <PlayView deck={activeDeck} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onFinish={handleSessionComplete} onNav={setView} history={history} showToast={showToast} addXp={addXp} onSrsReview={handleSrsReview} notes={notes} onUpdateNote={updateNotes} useAIStudio={useAIStudio} voiceName={selectedVoice} srsSettings={srsSettings} />;
                     default: return <HomeView />;
@@ -1400,7 +1480,7 @@
                         autoResume={autoResume}
                         onToggleAutoResume={toggleAutoResume}
                     />
-                    {showCreator && <CardCreatorView categories={[...new Set(cards.map(c => c.category))]} onClose={() => setShowCreator(false)} onSave={addCustomCard} />}
+                    {showCreator && <CardCreatorView categories={[...new Set(cards.map(c => c.category))]} onClose={() => { setShowCreator(false); setEditingCard(null); }} onSave={editingCard ? updateCard : addCustomCard} initialData={editingCard} />}
 
                     {renderView()}
                     {toast && <Toast message={toast} />}
@@ -1713,19 +1793,21 @@
                         isOpen={isSelectMode}
                         onClose={() => setIsSelectMode(false)}
                         onStart={(mode, range) => onStart(selectedCats, 'study', mode, range)}
-                        totalCards={cards.length}
+                        totalCards={selectedCats.length > 0 ? cards.filter(c => selectedCats.includes(c.category)).length : cards.length}
                     />
                 </div>
             );
         };
 
-        const BrowserView = ({ cards, bookmarks, onToggleBookmark, onNav, history }) => {
+        const BrowserView = ({ cards, bookmarks, onToggleBookmark, onNav, history, onEdit }) => {
             const [search, setSearch] = useState('');
             const [categoryFilter, setCategoryFilter] = useState('All');
             const [statusFilter, setStatusFilter] = useState('All'); // All, Learned, Mistake, Bookmark, Recorded
             const [sortOrder, setSortOrder] = useState('default'); // default, id_asc, id_desc
             const [expandedIds, setExpandedIds] = useState([]);
+            const [limit, setLimit] = useState(50); // Infinite Scroll Limit
             const [recordedIds, setRecordedIds] = useState([]);
+            const [confirmAction, setConfirmAction] = useState(null); // { message, onConfirm }
 
             useEffect(() => {
                 AudioDB.getKeys().then(keys => {
@@ -1752,13 +1834,23 @@
                 return matchesSearch && matchesCategory && matchesStatus;
             });
 
-            const sorted = [...filtered].sort((a, b) => {
+            const displayList = [...filtered].sort((a, b) => {
                 if (sortOrder === 'id_asc') return parseInt(a.id) - parseInt(b.id);
                 if (sortOrder === 'id_desc') return parseInt(b.id) - parseInt(a.id);
                 return 0; // Default natural order
             });
 
-            const displayList = sorted.slice(0, 50);
+            const visibleList = displayList.slice(0, limit);
+
+            const deleteAudio = (id) => {
+                setConfirmAction({
+                    message: "Are you sure you want to delete this voice recording? This cannot be undone.",
+                    onConfirm: async () => {
+                        await AudioDB.delete(id);
+                        setRecordedIds(prev => prev.filter(k => k !== id));
+                    }
+                });
+            };
 
             const toggleSort = () => {
                 if (sortOrder === 'default') setSortOrder('id_asc');
@@ -1790,7 +1882,7 @@
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                        {displayList.map(c => (
+                        {visibleList.map(c => (
                             <div key={c.id} className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-slate-200 dark:border-zinc-800 p-4">
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center gap-2">
@@ -1799,6 +1891,7 @@
                                     </div>
                                     <div className="flex gap-2">
                                         <button onClick={() => toggleExpand(c.id)} className="text-slate-400 dark:text-zinc-500 text-[10px] font-bold px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 uppercase tracking-widest hover:bg-indigo-50 dark:hover:bg-indigo-900 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{expandedIds.includes(c.id) ? 'Collapse' : 'Expand'}</button>
+                                        <button onClick={() => onEdit(c)} className="text-slate-300 dark:text-zinc-600 hover:text-indigo-500 dark:hover:text-indigo-400"><Icons.Edit size={18} /></button>
                                         <button onClick={() => onToggleBookmark(c.id)} className={bookmarks.includes(c.id) ? "text-yellow-400" : "text-slate-300 dark:text-zinc-600"}><Icons.Bookmark size={18} fill="currentColor" /></button>
                                     </div>
                                 </div>
@@ -1808,12 +1901,26 @@
                                     <div className="mt-4 pt-4 border-t border-slate-100 dark:border-zinc-800">
                                         <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Explanation</div>
                                         <div className="text-xs text-slate-600 dark:text-zinc-300"><Markdown content={c.explanation} /></div>
-                                        {recordedIds.includes(c.id) && <AudioPlayer cardId={c.id} />}
+                                        {recordedIds.includes(c.id) && (
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <div className="flex-1"><AudioPlayer cardId={c.id} /></div>
+                                                <button onClick={() => deleteAudio(c.id)} className="w-10 h-10 flex items-center justify-center text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"><Icons.Trash /></button>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
                         ))}
+                        {displayList.length > limit && (
+                            <button onClick={() => setLimit(l => l + 50)} className="w-full py-3 text-sm font-bold text-indigo-500 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors">Load More</button>
+                        )}
                     </div>
+                    <ConfirmationModal
+                        isOpen={!!confirmAction}
+                        onClose={() => setConfirmAction(null)}
+                        onConfirm={confirmAction?.onConfirm}
+                        message={confirmAction?.message}
+                    />
                 </div>
             );
         };
@@ -2252,8 +2359,11 @@
 
                                     {/* AUDIO PLAYBACK */}
                                     {audioUrl && (
-                                        <div className="p-2 flex justify-center bg-zinc-100 dark:bg-zinc-800 border-t border-slate-200 dark:border-zinc-700" onClick={e => e.stopPropagation()}>
-                                            <audio controls src={audioUrl} className="w-full h-8" />
+                                        <div className="mt-4 pt-2 border-t border-slate-100 dark:border-zinc-800" onClick={e => e.stopPropagation()}>
+                                            <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2 px-2">Voice Note</div>
+                                            <div className="p-2 flex justify-center bg-zinc-100 dark:bg-zinc-800 rounded-xl mx-2">
+                                                <audio controls src={audioUrl} className="w-full h-8" />
+                                            </div>
                                         </div>
                                     )}
 
