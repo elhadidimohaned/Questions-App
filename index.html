@@ -255,7 +255,8 @@
             Filter: (p) => <Icon {...p} path={<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />} />,
             Mic: (p) => <Icon {...p} path={<><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="23" /><line x1="8" x2="16" y1="23" y2="23" /></>} />,
             Headphones: (p) => <Icon {...p} path={<><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" /></>} />,
-            Stop: (p) => <Icon {...p} path={<rect x="6" y="6" width="12" height="12" rx="2" />} />
+            Stop: (p) => <Icon {...p} path={<rect x="6" y="6" width="12" height="12" rx="2" />} />,
+            ChevronDown: (p) => <Icon {...p} path={<path d="m6 9 6 6 6-6" />} />
         };
 
         const SimpleConfetti = () => {
@@ -459,16 +460,217 @@
             );
         };
 
-        const SettingsModal = ({ isOpen, onClose, onExport, onImport, useAIStudio, onToggleAIStudio }) => {
+        // --- AUDIO DB HELPER ---
+        const AudioDB = {
+            dbName: 'SeniorSwipeAudio',
+            version: 1,
+            init: () => {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(AudioDB.dbName, AudioDB.version);
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains('recordings')) {
+                            db.createObjectStore('recordings', { keyPath: 'cardId' });
+                        }
+                    };
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+            save: async (cardId, blob) => {
+                const db = await AudioDB.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('recordings', 'readwrite');
+                    tx.objectStore('recordings').put({ cardId, blob, date: new Date() });
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            },
+            get: async (cardId) => {
+                const db = await AudioDB.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('recordings', 'readonly');
+                    const req = tx.objectStore('recordings').get(cardId);
+                    req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+                    req.onerror = () => reject(req.error);
+                });
+            },
+            getAll: async () => {
+                const db = await AudioDB.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('recordings', 'readonly');
+                    const req = tx.objectStore('recordings').getAll();
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+            }
+        };
+
+        const AudioPlayer = ({ cardId }) => {
+            const [src, setSrc] = useState(null);
+            useEffect(() => {
+                AudioDB.get(cardId).then(blob => {
+                    if (blob) setSrc(URL.createObjectURL(blob));
+                });
+            }, [cardId]);
+
+            if (!src) return null;
+
+            return (
+                <div className="mt-3 bg-slate-50 dark:bg-zinc-800 rounded-lg p-2 border border-slate-200 dark:border-zinc-700">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Voice Recording</div>
+                    <audio controls src={src} className="w-full h-8" />
+                </div>
+            );
+        };
+
+
+
+        const VoiceSelect = ({ voices, currentVoice, onChange }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [search, setSearch] = useState('');
+            const containerRef = useRef(null);
+
+            useEffect(() => {
+                const handleClickOutside = (event) => {
+                    if (containerRef.current && !containerRef.current.contains(event.target)) {
+                        setIsOpen(false);
+                    }
+                };
+                if (isOpen) {
+                    document.addEventListener('click', handleClickOutside, true);
+                }
+                return () => {
+                    document.removeEventListener('click', handleClickOutside, true);
+                };
+            }, [isOpen]);
+
+            const filtered = voices.filter(v => v.name.toLowerCase().includes(search.toLowerCase()));
+
+            return (
+                <div className="relative" ref={containerRef}>
+                    {/* Trigger */}
+                    <button
+                        onClick={() => setIsOpen(!isOpen)}
+                        className="w-full p-3 bg-slate-50 dark:bg-zinc-800 rounded-xl flex justify-between items-center border border-transparent focus:border-indigo-500 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
+                    >
+                        <span className="truncate text-sm font-bold text-slate-700 dark:text-zinc-300 mr-2 text-left">
+                            {currentVoice || "Default Browser Voice"}
+                        </span>
+                        <Icons.ChevronDown className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} size={16} />
+                    </button>
+
+                    {/* Dropdown */}
+                    {isOpen && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-slate-100 dark:border-zinc-800 z-20 overflow-hidden flex flex-col max-h-60 animate-in fade-in zoom-in-95 duration-100">
+                            <div className="p-2 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/50">
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    className="w-full p-2 bg-white dark:bg-zinc-900 rounded-lg text-xs border border-slate-200 dark:border-zinc-700 focus:outline-none focus:border-indigo-500"
+                                    placeholder="Search voice..."
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                // Removed stopPropagation to ensure clicks register if needed, but input clicks are inside ref so safe
+                                />
+                            </div>
+                            <div className="overflow-y-auto flex-1 p-1">
+                                <div
+                                    onClick={() => { onChange(""); setIsOpen(false); }}
+                                    className={`p-2 rounded-lg text-xs mb-1 cursor-pointer flex items-center justify-between ${currentVoice === "" ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 font-bold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
+                                >
+                                    <span>Default Browser Voice</span>
+                                    {currentVoice === "" && <Icons.CheckCircle size={12} />}
+                                </div>
+                                {filtered.map(v => (
+                                    <div
+                                        key={v.name}
+                                        onClick={() => { onChange(v.name); setIsOpen(false); }}
+                                        className={`p-2 rounded-lg text-xs mb-1 cursor-pointer flex items-center justify-between ${currentVoice === v.name ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 font-bold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
+                                    >
+                                        <span className="truncate mr-2">{v.name}</span>
+                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-400">{v.lang}</span>
+                                    </div>
+                                ))}
+                                {filtered.length === 0 && <div className="p-4 text-center text-xs text-slate-400">No voices found</div>}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const CustomSelect = ({ value, options, onChange, className = "" }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const containerRef = useRef(null);
+            const selectedOption = options.find(o => o.value === value) || options[0];
+
+            useEffect(() => {
+                const handleClickOutside = (event) => {
+                    if (containerRef.current && !containerRef.current.contains(event.target)) {
+                        setIsOpen(false);
+                    }
+                };
+                if (isOpen) {
+                    document.addEventListener('click', handleClickOutside, true);
+                }
+                return () => {
+                    document.removeEventListener('click', handleClickOutside, true);
+                };
+            }, [isOpen]);
+
+            return (
+                <div className={`relative ${className}`} ref={containerRef}>
+                    <button
+                        onClick={() => setIsOpen(!isOpen)}
+                        className="w-full h-full p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg flex justify-between items-center border border-transparent focus:border-indigo-500 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
+                    >
+                        <span className="text-sm font-bold text-slate-700 dark:text-zinc-300 text-left truncate mr-1">
+                            {selectedOption?.label || value}
+                        </span>
+                        <Icons.ChevronDown className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} size={14} />
+                    </button>
+
+                    {isOpen && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-slate-100 dark:border-zinc-800 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100 min-w-[80px]">
+                            <div className="p-1">
+                                {options.map(opt => (
+                                    <div
+                                        key={opt.value}
+                                        onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                                        className={`p-2 rounded-lg text-xs mb-1 cursor-pointer flex items-center justify-between ${value === opt.value ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 font-bold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
+                                    >
+                                        <span>{opt.label}</span>
+                                        {value === opt.value && <Icons.CheckCircle size={10} />}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const SettingsModal = ({ isOpen, onClose, onExport, onImport, useAIStudio, onToggleAIStudio, voices, currentVoice, onVoiceChange, srsSettings, onSrsChange }) => {
+            useEffect(() => {
+                if (isOpen) document.body.style.overflow = 'hidden';
+                return () => document.body.style.overflow = 'unset';
+            }, [isOpen]);
+
             if (!isOpen) return null;
+
+            const srsLabels = { hard: 'Hard (Left)', good: 'Good', easy: 'Easy (Right)' };
 
             return (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
-                    <div className="bg-white dark:bg-zinc-900 w-full max-w-sm rounded-2xl p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-lg font-bold mb-6 text-slate-800 dark:text-white">Settings</h3>
+                    <div className="bg-white dark:bg-zinc-900 w-full max-w-sm rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="p-6 border-b border-slate-100 dark:border-zinc-800 shrink-0">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Settings</h3>
+                        </div>
 
-                        <div className="space-y-6">
-
+                        {/* Scrollable Body */}
+                        <div className="p-6 overflow-y-auto flex-1 space-y-6">
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Preferences</label>
                                 <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-zinc-800 rounded-xl">
@@ -479,6 +681,44 @@
                                     >
                                         <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${useAIStudio ? 'translate-x-6' : 'translate-x-0'}`} />
                                     </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Text-to-Speech Voice</label>
+                                <VoiceSelect
+                                    voices={voices}
+                                    currentVoice={currentVoice}
+                                    onChange={onVoiceChange}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">SRS Intervals</label>
+                                <div className="space-y-3">
+                                    {['hard', 'good', 'easy'].map(key => (
+                                        <div key={key} className="flex items-center gap-2">
+                                            <span className={`w-20 text-[10px] font-bold uppercase ${key === 'hard' ? 'text-orange-500' : key === 'good' ? 'text-green-500' : 'text-blue-500'}`}>{srsLabels[key]}</span>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                value={srsSettings[key]?.val ?? srsSettings[key]}
+                                                onChange={e => onSrsChange(key, 'val', parseFloat(e.target.value))}
+                                                className="flex-1 p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg text-sm font-bold text-slate-700 dark:text-zinc-300 outline-none"
+                                            />
+
+                                            <CustomSelect
+                                                value={srsSettings[key]?.unit || 'd'}
+                                                options={[
+                                                    { value: 'm', label: 'Min' },
+                                                    { value: 'h', label: 'Hour' },
+                                                    { value: 'd', label: 'Day' }
+                                                ]}
+                                                onChange={val => onSrsChange(key, 'unit', val)}
+                                                className="w-24"
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 
@@ -493,7 +733,11 @@
                                 </div>
                             </div>
                         </div>
-                        <button onClick={onClose} className="w-full mt-6 py-3 text-slate-400 font-bold hover:text-slate-600">Close</button>
+
+                        {/* Footer */}
+                        <div className="p-6 border-t border-slate-100 dark:border-zinc-800 shrink-0 bg-white dark:bg-zinc-900">
+                            <button onClick={onClose} className="w-full py-3 bg-slate-100 dark:bg-zinc-800 rounded-xl text-slate-600 dark:text-zinc-300 font-bold hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors">Close</button>
+                        </div>
                     </div>
                 </div>
             );
@@ -579,6 +823,21 @@
             };
             const [darkMode, setDarkMode] = useState(false);
             const [useAIStudio, setUseAIStudio] = useState(false);
+            const [selectedVoice, setSelectedVoice] = useState('');
+            const [voices, setVoices] = useState([]);
+            const [srsSettings, setSrsSettings] = useState({
+                hard: { val: 0.5, unit: 'd' },
+                good: { val: 1, unit: 'd' },
+                easy: { val: 4, unit: 'd' }
+            });
+
+            useEffect(() => {
+                const loadVoices = () => {
+                    setVoices(window.speechSynthesis.getVoices());
+                };
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+                loadVoices();
+            }, []);
 
             useEffect(() => {
                 // 1. Load Data
@@ -595,15 +854,19 @@
                 const s = localStorage.getItem('ss_streak');
                 const d = localStorage.getItem('ss_dark');
                 const ai = localStorage.getItem('ss_use_ai_studio');
+                const v = localStorage.getItem('ss_voice');
+                const savedSrsSettings = localStorage.getItem('ss_srs_settings');
 
                 if (h) setHistory(JSON.parse(h));
                 if (b) setBookmarks(JSON.parse(b));
                 if (w) setWrongQueue(JSON.parse(w));
                 if (s) setStreak(JSON.parse(s));
+                if (v) setSelectedVoice(v);
+                if (savedSrsSettings) setSrsSettings(JSON.parse(savedSrsSettings));
 
                 // Load SRS Data
-                const srs = localStorage.getItem('ss_srs_data');
-                if (srs) setSrsData(JSON.parse(srs));
+                const savedSrsData = localStorage.getItem('ss_srs_data');
+                if (savedSrsData) setSrsData(JSON.parse(savedSrsData));
 
                 const n = localStorage.getItem('ss_notes');
                 if (n) setNotes(JSON.parse(n));
@@ -631,6 +894,23 @@
                 const newVal = !useAIStudio;
                 setUseAIStudio(newVal);
                 localStorage.setItem('ss_use_ai_studio', newVal);
+            };
+
+            const updateVoice = (voiceName) => {
+                setSelectedVoice(voiceName);
+                localStorage.setItem('ss_voice', voiceName);
+            };
+
+            const updateSrsSettings = (key, field, val) => {
+                const current = srsSettings[key] || { val: 0, unit: 'd' };
+                // If existing state implies old format (number), convert to object
+                const safeCurrent = typeof current === 'number' ? { val: current, unit: 'd' } : current;
+
+                const newObj = { ...safeCurrent, [field]: val };
+                const newSettings = { ...srsSettings, [key]: newObj };
+
+                setSrsSettings(newSettings);
+                localStorage.setItem('ss_srs_settings', JSON.stringify(newSettings));
             };
 
             const updateNotes = (cardId, text) => {
@@ -661,33 +941,48 @@
             };
 
             // SRS Logic (Correctly scoped)
+            // SRS Logic (Correctly scoped)
             const handleSrsReview = (id, rating) => {
                 const NOW = Date.now();
                 const existing = srsData[id] || { interval: 0, ease: 2.5, streak: 0 };
-                let { interval, ease, street } = existing;
+                let { interval, ease } = existing;
                 let streak = existing.streak || 0;
+
+                // Helper to get raw minutes
+                const getMins = (setting) => {
+                    const s = setting || { val: 1, unit: 'd' }; // default safety
+                    let v = s.val || s; // handle legacy number
+                    let u = s.unit || 'd';
+                    if (u === 'm') return v;
+                    if (u === 'h') return v * 60;
+                    return v * 24 * 60; // days to mins
+                };
 
                 // Rating: 0=Again, 1=Hard, 2=Good, 3=Easy
                 if (rating === SRS.AGAIN) {
                     streak = 0;
-                    interval = 0; // 1 min
+                    interval = 0; // 0 mins
                 } else if (rating === SRS.HARD) {
                     streak = 0;
-                    interval = 0.5; // 12 hours
+                    interval = getMins(srsSettings.hard);
                 } else if (rating === SRS.GOOD) {
                     streak++;
-                    interval = streak === 1 ? 1 : interval * ease;
+                    interval = streak === 1 ? getMins(srsSettings.good) : interval * ease;
                 } else if (rating === SRS.EASY) {
                     streak++;
                     ease += 0.15;
-                    interval = streak === 1 ? 4 : interval * ease * 1.3;
+                    interval = streak === 1 ? getMins(srsSettings.easy) : interval * ease * 1.3;
                 }
 
                 if (ease < 1.3) ease = 1.3;
 
-                // Calc Next Review (interval in days)
-                let nextReview = NOW + (interval * 24 * 60 * 60 * 1000);
-                if (interval === 0) nextReview = NOW + (60 * 1000); // 1 min
+                // Calc Next Review
+                let nextReview;
+                if (interval === 0) {
+                    nextReview = NOW + (60 * 1000); // 1 min for mistakes
+                } else {
+                    nextReview = NOW + (interval * 60 * 1000);
+                }
 
                 const newData = { ...srsData, [id]: { interval, ease, streak, nextReview } };
                 setSrsData(newData);
@@ -834,15 +1129,15 @@
             const renderView = () => {
                 switch (view) {
                     case 'home': return <HomeView cards={cards} history={history} bookmarks={bookmarks} streak={streak} wrongQueue={wrongQueue} darkMode={darkMode} toggleDarkMode={toggleDarkMode} onStart={startSession} onNav={setView} xp={xp} level={level} levelProgress={levelProgress} setShowSettings={setShowSettings} setShowCreator={setShowCreator} srsData={srsData} updateStreak={updateStreak} />;
-                    case 'browser': return <BrowserView cards={cards} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onNav={setView} />;
-                    case 'play': return <PlayView deck={activeDeck} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onFinish={handleSessionComplete} onNav={setView} history={history} showToast={showToast} addXp={addXp} onSrsReview={handleSrsReview} notes={notes} onUpdateNote={updateNotes} useAIStudio={useAIStudio} />;
+                    case 'browser': return <BrowserView cards={cards} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onNav={setView} history={history} />;
+                    case 'play': return <PlayView deck={activeDeck} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onFinish={handleSessionComplete} onNav={setView} history={history} showToast={showToast} addXp={addXp} onSrsReview={handleSrsReview} notes={notes} onUpdateNote={updateNotes} useAIStudio={useAIStudio} voiceName={selectedVoice} srsSettings={srsSettings} />;
                     default: return <HomeView />;
                 }
             };
 
             return (
                 <div className="max-w-md mx-auto min-h-screen bg-white dark:bg-zinc-950 shadow-2xl relative font-sans text-slate-800 dark:text-zinc-200">
-                    <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} onExport={exportData} onImport={importData} useAIStudio={useAIStudio} onToggleAIStudio={toggleAIStudio} />
+                    <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} onExport={exportData} onImport={importData} useAIStudio={useAIStudio} onToggleAIStudio={toggleAIStudio} voices={voices} currentVoice={selectedVoice} onVoiceChange={updateVoice} srsSettings={srsSettings} onSrsChange={updateSrsSettings} />
                     {showCreator && <CardCreatorView categories={[...new Set(cards.map(c => c.category))]} onClose={() => setShowCreator(false)} onSave={addCustomCard} />}
 
                     {renderView()}
@@ -1161,11 +1456,20 @@
             );
         };
 
-        const BrowserView = ({ cards, bookmarks, onToggleBookmark, onNav }) => {
+        const BrowserView = ({ cards, bookmarks, onToggleBookmark, onNav, history }) => {
             const [search, setSearch] = useState('');
             const [categoryFilter, setCategoryFilter] = useState('All');
+            const [statusFilter, setStatusFilter] = useState('All'); // All, Learned, Mistake, Bookmark, Recorded
             const [sortOrder, setSortOrder] = useState('default'); // default, id_asc, id_desc
             const [expandedIds, setExpandedIds] = useState([]);
+            const [recordedIds, setRecordedIds] = useState([]);
+
+            useEffect(() => {
+                AudioDB.getAll().then(recs => {
+                    setRecordedIds(recs.map(r => r.cardId));
+                });
+            }, []);
+
             const categories = ['All', ...new Set(cards.map(c => c.category))];
 
             const toggleExpand = (id) => {
@@ -1176,7 +1480,13 @@
             const filtered = cards.filter(c => {
                 const matchesSearch = c.title.toLowerCase().includes(search.toLowerCase()) || c.content.toLowerCase().includes(search.toLowerCase());
                 const matchesCategory = categoryFilter === 'All' || c.category === categoryFilter;
-                return matchesSearch && matchesCategory;
+
+                let matchesStatus = true;
+                if (statusFilter === 'Learned') matchesStatus = history.includes(c.id);
+                else if (statusFilter === 'Bookmarked') matchesStatus = bookmarks.includes(c.id);
+                else if (statusFilter === 'Recorded') matchesStatus = recordedIds.includes(c.id);
+
+                return matchesSearch && matchesCategory && matchesStatus;
             });
 
             const sorted = [...filtered].sort((a, b) => {
@@ -1209,6 +1519,11 @@
                                     <button key={cat} onClick={() => setCategoryFilter(cat)} className={`px-3 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition-colors border ${categoryFilter === cat ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 border-transparent'}`}>{cat}</button>
                                 ))}
                             </div>
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar pt-1">
+                                {['All', 'Learned', 'Bookmarked', 'Recorded'].map(st => (
+                                    <button key={st} onClick={() => setStatusFilter(st)} className={`px-3 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition-colors border ${statusFilter === st ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 border-transparent'}`}>{st}</button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -1226,7 +1541,13 @@
                                 </div>
                                 <h3 className="font-bold text-slate-800 dark:text-white text-sm mb-2">{c.title}</h3>
                                 <div className={`text-xs text-slate-500 dark:text-zinc-400 ${expandedIds.includes(c.id) ? '' : 'line-clamp-2'}`}><Markdown content={c.content} /></div>
-                                {expandedIds.includes(c.id) && <div className="mt-4 pt-4 border-t border-slate-100 dark:border-zinc-800"><div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Explanation</div><div className="text-xs text-slate-600 dark:text-zinc-300"><Markdown content={c.explanation} /></div></div>}
+                                {expandedIds.includes(c.id) && (
+                                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-zinc-800">
+                                        <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Explanation</div>
+                                        <div className="text-xs text-slate-600 dark:text-zinc-300"><Markdown content={c.explanation} /></div>
+                                        {recordedIds.includes(c.id) && <AudioPlayer cardId={c.id} />}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -1234,7 +1555,7 @@
             );
         };
 
-        const PlayView = ({ deck, bookmarks, onToggleBookmark, onFinish, onNav, history, showToast, addXp, onSrsReview, notes, onUpdateNote, useAIStudio }) => {
+        const PlayView = ({ deck, bookmarks, onToggleBookmark, onFinish, onNav, history, showToast, addXp, onSrsReview, notes, onUpdateNote, useAIStudio, voiceName, srsSettings }) => {
             const [index, setIndex] = useState(0);
             const [isFlipped, setIsFlipped] = useState(false);
             const [localLearned, setLocalLearned] = useState([]);
@@ -1251,6 +1572,18 @@
             const mediaRecorder = useRef(null);
             const audioChunks = useRef([]);
 
+            const card = deck[index] || {};
+
+            // Load Recording on Index Change
+            useEffect(() => {
+                if (card.id) {
+                    AudioDB.get(card.id).then(blob => {
+                        if (blob) setAudioUrl(URL.createObjectURL(blob));
+                        else setAudioUrl(null);
+                    });
+                }
+            }, [card.id]);
+
             // Commuter State
             const synth = window.speechSynthesis;
             const uttr = useRef(new SpeechSynthesisUtterance());
@@ -1265,6 +1598,13 @@
                 // Sequence: Read Q -> Wait 5s -> Read A -> Wait 2s -> Next
                 const readCard = () => {
                     if (!card) return;
+
+                    // Configure Voice
+                    if (voiceName) {
+                        const voices = synth.getVoices();
+                        const v = voices.find(vo => vo.name === voiceName);
+                        if (v) uttr.current.voice = v;
+                    }
 
                     // Step 1: Read Question
                     uttr.current.text = `Question. ${card.title}. ${card.content}`;
@@ -1291,48 +1631,81 @@
                 readCard();
 
                 return () => synth.cancel();
-            }, [commuterMode, index]); // effect runs when index changes to read next card
+            }, [commuterMode, index, voiceName]);
 
             // Interview Timer
             useEffect(() => {
                 let interval;
                 if (interviewMode && !isFlipped && timer > 0) {
-                    interval = setInterval(() => setTimer(t => t - 1), 1000);
+                    interval = setInterval(() => {
+                        setTimer(prev => {
+                            if (prev <= 1) {
+                                clearInterval(interval);
+                                return 0;
+                            }
+                            return prev - 1;
+                        });
+                    }, 1000);
                 }
                 return () => clearInterval(interval);
-            }, [interviewMode, isFlipped, timer]);
+            }, [interviewMode, isFlipped]);
 
-            // Audio Recording
-            const toggleRecording = async () => {
-                if (isRecording) {
-                    mediaRecorder.current.stop();
-                    setIsRecording(false);
-                } else {
-                    try {
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        mediaRecorder.current = new MediaRecorder(stream);
-                        audioChunks.current = [];
+            // Audio Recording - Split for explicit control
+            const startRecording = async () => {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showToast("Mic not supported (Use localhost/HTTPS)");
+                    console.error("navigator.mediaDevices not available");
+                    return;
+                }
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder.current = new MediaRecorder(stream);
+                    audioChunks.current = [];
 
-                        mediaRecorder.current.ondataavailable = (e) => audioChunks.current.push(e.data);
-                        mediaRecorder.current.onstop = () => {
-                            const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
-                            setAudioUrl(URL.createObjectURL(blob));
-                        };
+                    mediaRecorder.current.ondataavailable = (e) => audioChunks.current.push(e.data);
+                    mediaRecorder.current.onstop = () => {
+                        const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
+                        setAudioUrl(URL.createObjectURL(blob));
+                        // Save to DB
+                        AudioDB.save(card.id, blob).then(() => {
+                            showToast("Recording Saved!");
+                        });
+                    };
 
-                        mediaRecorder.current.start();
-                        setIsRecording(true);
-                    } catch (e) {
-                        showToast("Microphone access denied");
-                    }
+                    mediaRecorder.current.start();
+                    setIsRecording(true);
+                    showToast("Recording Started");
+                } catch (e) {
+                    console.error("Mic Error:", e);
+                    showToast("Mic Access Denied/Error");
                 }
             };
 
-            const card = deck[index] || {};
+            const stopRecording = () => {
+                if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
+                    mediaRecorder.current.stop();
+                    setIsRecording(false);
+                }
+            };
+
+            const toggleInterview = () => {
+                const newMode = !interviewMode;
+                setInterviewMode(newMode);
+                setCommuterMode(false);
+
+                if (newMode) {
+                    setTimer(120);
+                    startRecording();
+                } else {
+                    stopRecording();
+                }
+            };
+
             const isLast = index === deck.length - 1;
             const hasLearned = history.includes(card?.id) || localLearned.includes(card?.id);
 
             // --- TOUCH / SWIPE LOGIC ---
-            const [touchStart, setTouchStart] = useState(null);
+            const [touchStart, setTouchStart] = useState(null); // {x, y}
             const [touchEnd, setTouchEnd] = useState(null);
             const [swipeOffset, setSwipeOffset] = useState(0);
 
@@ -1340,23 +1713,30 @@
 
             const onTouchStart = (e) => {
                 setTouchEnd(null);
-                setTouchStart(e.targetTouches[0].clientX);
+                setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
             };
 
             const onTouchMove = (e) => {
-                // Prevent scrolling while swiping
-                e.stopPropagation();
+                if (!touchStart) return;
+                const currentX = e.targetTouches[0].clientX;
+                const currentY = e.targetTouches[0].clientY;
+                const dx = currentX - touchStart.x;
+                const dy = currentY - touchStart.y;
 
-                setTouchEnd(e.targetTouches[0].clientX);
-                if (touchStart) {
-                    const current = e.targetTouches[0].clientX;
-                    setSwipeOffset(current - touchStart);
+                if (Math.abs(dy) > Math.abs(dx)) return; // Vertical scroll, ignore
+
+                if (Math.abs(dx) > 10) {
+                    setTouchEnd(currentX);
+                    setSwipeOffset(dx);
                 }
             };
 
             const onTouchEnd = () => {
-                if (!touchStart || !touchEnd) return;
-                const distance = touchStart - touchEnd;
+                if (!touchStart || !touchEnd) {
+                    setSwipeOffset(0);
+                    return;
+                }
+                const distance = touchStart.x - touchEnd; // Note: touchStart is obj
                 const isLeftSwipe = distance > minSwipeDistance;
                 const isRightSwipe = distance < -minSwipeDistance;
 
@@ -1434,6 +1814,7 @@
                 setCardAnim('card-exit-left');
                 setTimeout(() => {
                     setIsFlipped(false);
+                    setSwipeOffset(false);
                     if (isLast) finishSession();
                     else {
                         setIndex(index + 1);
@@ -1484,7 +1865,7 @@
             const style = {
                 transform: `translateX(${swipeOffset}px) rotate(${swipeRotation}deg) ${isFlipped ? 'rotateY(180deg)' : ''}`,
                 opacity: isFlipped ? 1 : Math.min(1, Math.max(0.5, 1 - Math.abs(swipeOffset) / 1000)),
-                touchAction: 'none' // CRITICAL: Stop browser from handling swipe
+                touchAction: 'pan-y' // ALLOW SCROLLING
             };
 
             return (
@@ -1498,13 +1879,13 @@
                         </div>
                         <div className="flex gap-2">
                             <button onClick={() => { setCommuterMode(!commuterMode); setInterviewMode(false); }} className={`p-2 rounded-full ${commuterMode ? 'bg-indigo-600 text-white' : 'text-slate-300 dark:text-zinc-600'}`}><Icons.Headphones size={20} /></button>
-                            <button onClick={() => { setInterviewMode(!interviewMode); setCommuterMode(false); setTimer(120); }} className={`p-2 rounded-full ${interviewMode ? 'bg-indigo-600 text-white' : 'text-slate-300 dark:text-zinc-600'}`}><Icons.Mic size={20} /></button>
+                            <button onClick={toggleInterview} className={`p-2 rounded-full ${interviewMode ? 'bg-red-500 text-white animate-pulse' : 'text-slate-300 dark:text-zinc-600'}`}><Icons.Mic size={20} /></button>
                             <button onClick={() => onToggleBookmark(card.id)} className={bookmarks.includes(card.id) ? "text-yellow-400 p-2" : "text-slate-300 dark:text-zinc-600 p-2"}><Icons.Bookmark fill={bookmarks.includes(card.id) ? "currentColor" : "none"} /></button>
                         </div>
                     </div>
 
-                    {/* Card Container - Refactored for full content visibility */}
-                    <div className="flex-1 flex items-start justify-center p-6 overflow-y-auto overflow-x-hidden">
+                    {/* Card Container - CENTERED but Scrollable */}
+                    <div className="flex-1 flex flex-col items-center justify-start pt-10 pb-32 overflow-y-auto overflow-x-hidden">
                         <div
                             className={`relative w-full max-w-sm transition-transform duration-75 cursor-pointer ${cardAnim}`}
                             style={cardAnim ? {} : style}
@@ -1538,6 +1919,13 @@
                                         <div className="text-base text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap"><Markdown content={card.explanation} /></div>
                                     </div>
 
+                                    {/* AUDIO PLAYBACK */}
+                                    {audioUrl && (
+                                        <div className="p-2 flex justify-center bg-zinc-100 dark:bg-zinc-800 border-t border-slate-200 dark:border-zinc-700" onClick={e => e.stopPropagation()}>
+                                            <audio controls src={audioUrl} className="w-full h-8" />
+                                        </div>
+                                    )}
+
                                     <div className="p-2 flex justify-center gap-4 bg-indigo-50 dark:bg-indigo-900/10 border-t border-indigo-100 dark:border-zinc-800">
                                         <button onClick={copyPrompt} className="p-2 text-indigo-400 hover:text-indigo-600 flex items-center gap-2 text-xs font-bold uppercase tracking-wide"><Icons.Robot size={18} /> Ask AI</button>
                                     </div>
@@ -1561,33 +1949,33 @@
                                         </button>
                                         <button onClick={(e) => { e.stopPropagation(); handleSrs(1); }} className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800">
                                             <span className="text-[10px] font-bold text-orange-500 uppercase">Hard</span>
-                                            <span className="text-[9px] text-slate-400">12h</span>
+                                            <span className="text-[9px] text-slate-400">{srsSettings.hard?.val ?? 0.5}{srsSettings.hard?.unit ?? 'd'}</span>
                                         </button>
                                         <button onClick={(e) => { e.stopPropagation(); handleSrs(2); }} className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800">
                                             <span className="text-[10px] font-bold text-green-500 uppercase">Good</span>
-                                            <span className="text-[9px] text-slate-400">1d</span>
+                                            <span className="text-[9px] text-slate-400">{srsSettings.good?.val ?? 1}{srsSettings.good?.unit ?? 'd'}</span>
                                         </button>
                                         <button onClick={(e) => { e.stopPropagation(); handleSrs(3); }} className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800">
                                             <span className="text-[10px] font-bold text-blue-500 uppercase">Easy</span>
-                                            <span className="text-[9px] text-slate-400">4d</span>
+                                            <span className="text-[9px] text-slate-400">{srsSettings.easy?.val ?? 4}{srsSettings.easy?.unit ?? 'd'}</span>
                                         </button>
                                     </div>
                                 </div>
                             )}
                         </div>
-                    </div>
-                    {/* Navigation Buttons */}
-                    {/* Navigation Buttons (Fallback) */}
-                    <div className="p-8 pb-12 flex justify-center gap-6 z-10">
-                        <div className="absolute top-1/2 left-4 -translate-y-1/2 opacity-20 pointer-events-none"><Icons.X size={48} className="text-red-500" /></div>
-                        <div className="absolute top-1/2 right-4 -translate-y-1/2 opacity-20 pointer-events-none"><Icons.CheckCircle size={48} className="text-green-500" /></div>
 
-                        {!isFlipped && (
-                            <div className="flex gap-4 items-center">
-                                <span className="text-xs font-bold text-slate-400 opacity-50"><Icon path={<path d="m15 18-6-6 6-6" />} size={16} /> Swipe Left</span>
-                                <span className="text-xs font-bold text-slate-400 opacity-50">Swipe Right <Icon path={<path d="m9 18 6-6-6-6" />} size={16} /></span>
-                            </div>
-                        )}
+                        {/* Navigation Buttons */}
+                        <div className="p-8 pb-12 flex justify-center gap-6 z-10 pointer-events-none">
+                            <div className="absolute top-1/2 left-4 -translate-y-1/2 opacity-20 pointer-events-none"><Icons.X size={48} className="text-red-500" /></div>
+                            <div className="absolute top-1/2 right-4 -translate-y-1/2 opacity-20 pointer-events-none"><Icons.CheckCircle size={48} className="text-green-500" /></div>
+
+                            {!isFlipped && (
+                                <div className="flex gap-4 items-center">
+                                    <span className="text-xs font-bold text-slate-400 opacity-50"><Icon path={<path d="m15 18-6-6 6-6" />} size={16} /> Swipe Left</span>
+                                    <span className="text-xs font-bold text-slate-400 opacity-50">Swipe Right <Icon path={<path d="m9 18 6-6-6-6" />} size={16} /></span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             );
