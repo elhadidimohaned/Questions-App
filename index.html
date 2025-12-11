@@ -651,7 +651,7 @@
             );
         };
 
-        const SettingsModal = ({ isOpen, onClose, onExport, onImport, useAIStudio, onToggleAIStudio, voices, currentVoice, onVoiceChange, srsSettings, onSrsChange }) => {
+        const SettingsModal = ({ isOpen, onClose, onExport, onImport, useAIStudio, onToggleAIStudio, voices, currentVoice, onVoiceChange, srsSettings, onSrsChange, autoResume, onToggleAutoResume }) => {
             useEffect(() => {
                 if (isOpen) document.body.style.overflow = 'hidden';
                 return () => document.body.style.overflow = 'unset';
@@ -673,14 +673,25 @@
                         <div className="p-6 overflow-y-auto flex-1 space-y-6">
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Preferences</label>
-                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-zinc-800 rounded-xl">
-                                    <span className="text-sm font-bold text-slate-700 dark:text-zinc-300">Ask AI opens AI Studio</span>
-                                    <button
-                                        onClick={onToggleAIStudio}
-                                        className={`w-12 h-6 rounded-full p-1 transition-colors ${useAIStudio ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
-                                    >
-                                        <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${useAIStudio ? 'translate-x-6' : 'translate-x-0'}`} />
-                                    </button>
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-zinc-800 rounded-xl">
+                                        <span className="text-sm font-bold text-slate-700 dark:text-zinc-300">Resume Recent Session</span>
+                                        <button
+                                            onClick={onToggleAutoResume}
+                                            className={`w-12 h-6 rounded-full p-1 transition-colors ${autoResume ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                                        >
+                                            <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${autoResume ? 'translate-x-6' : 'translate-x-0'}`} />
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-zinc-800 rounded-xl">
+                                        <span className="text-sm font-bold text-slate-700 dark:text-zinc-300">Ask AI opens AI Studio</span>
+                                        <button
+                                            onClick={onToggleAIStudio}
+                                            className={`w-12 h-6 rounded-full p-1 transition-colors ${useAIStudio ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                                        >
+                                            <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${useAIStudio ? 'translate-x-6' : 'translate-x-0'}`} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -789,13 +800,24 @@
 
         // --- MAIN APP ---
         function App() {
-            const [view, setView] = useState('home');
+            const [autoResume, setAutoResume] = useState(() => localStorage.getItem('ss_auto_resume') === 'true');
+            // Lazy load - Only if autoResume is true
+            const [view, setView] = useState(() => (autoResume && localStorage.getItem('ss_view')) || 'home');
+
             const [cards, setCards] = useState([]);
             const [history, setHistory] = useState([]);
             const [bookmarks, setBookmarks] = useState([]);
-            const [wrongQueue, setWrongQueue] = useState([]); // ID list of mistakes
+            const [wrongQueue, setWrongQueue] = useState([]);
             const [streak, setStreak] = useState({ count: 0, lastDate: null, history: {} });
-            const [activeDeck, setActiveDeck] = useState([]);
+
+            const [activeDeck, setActiveDeck] = useState(() => {
+                if (!autoResume) return [];
+                try {
+                    return JSON.parse(localStorage.getItem('ss_active_deck')) || [];
+                } catch {
+                    return [];
+                }
+            });
             const [toast, setToast] = useState(null);
 
             const [xp, setXp] = useState(() => parseInt(localStorage.getItem('ss_xp')) || 0);
@@ -848,6 +870,8 @@
                 setCards([...externalData, ...savedCustom]);
 
                 // 2. Load Persisted State
+
+
                 const h = localStorage.getItem('ss_history');
                 const b = localStorage.getItem('ss_bookmarks');
                 const w = localStorage.getItem('ss_wrongQueue');
@@ -1135,9 +1159,59 @@
                 }
             };
 
+            // Persistence for Session
+            useEffect(() => {
+                if (!autoResume) {
+                    if (view === 'home') {
+                        localStorage.removeItem('ss_view');
+                        localStorage.removeItem('ss_active_deck');
+                        localStorage.removeItem('ss_session_index');
+                    }
+                    return;
+                }
+
+                localStorage.setItem('ss_view', view);
+                if (view === 'play') {
+                    localStorage.setItem('ss_active_deck', JSON.stringify(activeDeck));
+                } else {
+                    localStorage.removeItem('ss_active_deck');
+                    localStorage.removeItem('ss_session_index');
+                }
+            }, [view, activeDeck, autoResume]);
+
+            const toggleAutoResume = () => {
+                const newVal = !autoResume;
+                setAutoResume(newVal);
+                localStorage.setItem('ss_auto_resume', newVal);
+                if (!newVal) {
+                    // Clear state immediately if turned off
+                    localStorage.removeItem('ss_view');
+                    localStorage.removeItem('ss_active_deck');
+                    localStorage.removeItem('ss_session_index');
+                } else {
+                    // Save state immediately if turned on
+                    localStorage.setItem('ss_view', view);
+                    if (view === 'play') localStorage.setItem('ss_active_deck', JSON.stringify(activeDeck));
+                }
+            };
+
             return (
                 <div className="max-w-md mx-auto min-h-screen bg-white dark:bg-zinc-950 shadow-2xl relative font-sans text-slate-800 dark:text-zinc-200">
-                    <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} onExport={exportData} onImport={importData} useAIStudio={useAIStudio} onToggleAIStudio={toggleAIStudio} voices={voices} currentVoice={selectedVoice} onVoiceChange={updateVoice} srsSettings={srsSettings} onSrsChange={updateSrsSettings} />
+                    <SettingsModal
+                        isOpen={showSettings}
+                        onClose={() => setShowSettings(false)}
+                        onExport={exportData}
+                        onImport={importData}
+                        useAIStudio={useAIStudio}
+                        onToggleAIStudio={toggleAIStudio}
+                        voices={voices}
+                        currentVoice={selectedVoice}
+                        onVoiceChange={updateVoice}
+                        srsSettings={srsSettings}
+                        onSrsChange={updateSrsSettings}
+                        autoResume={autoResume}
+                        onToggleAutoResume={toggleAutoResume}
+                    />
                     {showCreator && <CardCreatorView categories={[...new Set(cards.map(c => c.category))]} onClose={() => setShowCreator(false)} onSave={addCustomCard} />}
 
                     {renderView()}
@@ -1556,7 +1630,11 @@
         };
 
         const PlayView = ({ deck, bookmarks, onToggleBookmark, onFinish, onNav, history, showToast, addXp, onSrsReview, notes, onUpdateNote, useAIStudio, voiceName, srsSettings }) => {
-            const [index, setIndex] = useState(0);
+            const [index, setIndex] = useState(() => parseInt(localStorage.getItem('ss_session_index')) || 0);
+
+            useEffect(() => {
+                localStorage.setItem('ss_session_index', index);
+            }, [index]);
             const [isFlipped, setIsFlipped] = useState(false);
             const [localLearned, setLocalLearned] = useState([]);
             const [showConfetti, setShowConfetti] = useState(false);
