@@ -217,12 +217,38 @@
         const SRS = { AGAIN: 0, HARD: 1, GOOD: 2, EASY: 3 };
 
         // --- COMPONENTS ---
-        const Markdown = ({ content }) => {
+        const HighlightText = ({ text, term }) => {
+            if (!term || term.length < 2) return text;
+            try {
+                const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+                return (
+                    <span>
+                        {parts.map((part, i) =>
+                            part.toLowerCase() === term.toLowerCase() ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-900/50 text-slate-800 dark:text-zinc-200 rounded-sm px-0.5">{part}</mark> : part
+                        )}
+                    </span>
+                );
+            } catch (e) { return text; }
+        };
+
+        const Markdown = ({ content, searchTerm }) => {
             useEffect(() => {
                 if (window.Prism) window.Prism.highlightAll();
             }, [content]);
 
-            return <div className="markdown-body text-sm leading-relaxed text-slate-600 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: marked.parse(content || "") }} />;
+            const processedContent = useMemo(() => {
+                if (!content) return "";
+                if (!searchTerm || searchTerm.length < 2) return content;
+
+                // Escape special regex chars
+                const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(`(${escaped})`, 'gi');
+                // Use a standard mark tag with Tailwind class for dark mode text visibility
+                return content.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-900/50 text-slate-800 dark:text-zinc-200 rounded-sm px-0.5">$1</mark>');
+            }, [content, searchTerm]);
+
+            return <div className="markdown-body text-sm leading-relaxed text-slate-600 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: marked.parse(processedContent) }} />;
         };
 
         const Toast = ({ message }) => (
@@ -256,7 +282,8 @@
             Mic: (p) => <Icon {...p} path={<><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="23" /><line x1="8" x2="16" y1="23" y2="23" /></>} />,
             Headphones: (p) => <Icon {...p} path={<><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" /></>} />,
             Stop: (p) => <Icon {...p} path={<rect x="6" y="6" width="12" height="12" rx="2" />} />,
-            ChevronDown: (p) => <Icon {...p} path={<path d="m6 9 6 6 6-6" />} />
+            ChevronDown: (p) => <Icon {...p} path={<path d="m6 9 6 6 6-6" />} />,
+            Book: (p) => <Icon {...p} path={<><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>} />
         };
 
         const SimpleConfetti = () => {
@@ -410,6 +437,7 @@
 
         const CardCreatorView = ({ onClose, onSave, categories }) => {
             const [form, setForm] = useState({ title: '', category: categories[0] || 'General', difficulty: 'Senior', content: '', explanation: '' });
+            const [viewMode, setViewMode] = useState('write'); // write, preview
 
             const handleSubmit = () => {
                 if (!form.title || !form.content) return alert("Title and Content are required.");
@@ -421,39 +449,62 @@
                     <div className="w-full max-w-md h-full sm:h-[90vh] bg-white dark:bg-zinc-950 flex flex-col shadow-2xl overflow-hidden sm:rounded-2xl">
                         <div className="p-4 border-b border-slate-100 dark:border-zinc-800 flex justify-between items-center">
                             <button onClick={onClose} className="text-slate-500 font-bold">Cancel</button>
-                            <h2 className="font-bold text-lg">New Card</h2>
+                            <div className="flex bg-slate-100 dark:bg-zinc-800 rounded-lg p-1">
+                                <button onClick={() => setViewMode('write')} className={`px-4 py-1 rounded-md text-xs font-bold transition-all ${viewMode === 'write' ? 'bg-white dark:bg-zinc-700 shadow-sm text-indigo-600' : 'text-slate-400'}`}>Write</button>
+                                <button onClick={() => setViewMode('preview')} className={`px-4 py-1 rounded-md text-xs font-bold transition-all ${viewMode === 'preview' ? 'bg-white dark:bg-zinc-700 shadow-sm text-indigo-600' : 'text-slate-400'}`}>Preview</button>
+                            </div>
                             <button onClick={handleSubmit} className="text-indigo-600 font-bold">Save</button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Title</label>
-                                <input type="text" className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl" placeholder="e.g. Rate Limiting" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Category</label>
-                                    <select className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
-                                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                                        <option value="User Added">User Added</option>
-                                    </select>
+                            {viewMode === 'write' ? (
+                                <>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Title</label>
+                                        <input type="text" className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl" placeholder="e.g. Rate Limiting" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Category</label>
+                                            <select className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                                <option value="User Added">User Added</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Difficulty</label>
+                                            <select className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl" value={form.difficulty} onChange={e => setForm({ ...form, difficulty: e.target.value })}>
+                                                <option value="Junior">Junior</option>
+                                                <option value="Senior">Senior</option>
+                                                <option value="Principal">Principal</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Question (Markdown)</label>
+                                        <textarea className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl h-32 font-mono text-sm" placeholder="# Question..." value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Explanation (Markdown)</label>
+                                        <textarea className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl h-32 font-mono text-sm" placeholder="The answer is..." value={form.explanation} onChange={e => setForm({ ...form, explanation: e.target.value })} />
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="space-y-6">
+                                    <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-xl border border-slate-200 dark:border-zinc-800 p-6">
+                                        <span className="text-[10px] px-2 py-1 rounded-full font-bold tracking-wider uppercase bg-slate-200 text-slate-600 dark:bg-zinc-700 dark:text-zinc-300 mr-2">{form.category}</span>
+                                        <span className="text-[10px] px-2 py-1 rounded-full font-bold tracking-wider uppercase bg-slate-100 text-slate-500">{form.difficulty}</span>
+                                        <h3 className="text-xl font-bold text-slate-800 dark:text-white mt-3">{form.title}</h3>
+                                        <div className="mt-6 border-t border-slate-100 dark:border-zinc-800 pt-6">
+                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-4">Question</label>
+                                            <Markdown content={form.content} />
+                                        </div>
+                                        <div className="mt-6 border-t border-slate-100 dark:border-zinc-800 pt-6">
+                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-4">Answer</label>
+                                            <Markdown content={form.explanation} />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Difficulty</label>
-                                    <select className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl" value={form.difficulty} onChange={e => setForm({ ...form, difficulty: e.target.value })}>
-                                        <option value="Junior">Junior</option>
-                                        <option value="Senior">Senior</option>
-                                        <option value="Principal">Principal</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Question (Markdown)</label>
-                                <textarea className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl h-32 font-mono text-sm" placeholder="# Question..." value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Explanation (Markdown)</label>
-                                <textarea className="w-full p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl h-32 font-mono text-sm" placeholder="The answer is..." value={form.explanation} onChange={e => setForm({ ...form, explanation: e.target.value })} />
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -503,6 +554,60 @@
                     req.onsuccess = () => resolve(req.result);
                     req.onerror = () => reject(req.error);
                 });
+            },
+            getKeys: async () => {
+                const db = await AudioDB.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('recordings', 'readonly');
+                    const req = tx.objectStore('recordings').getAllKeys();
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+            }
+        };
+
+        const CustomCardDB = {
+            dbName: 'SeniorSwipeCards',
+            version: 1,
+            init: () => {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(CustomCardDB.dbName, CustomCardDB.version);
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains('cards')) {
+                            db.createObjectStore('cards', { keyPath: 'id' });
+                        }
+                    };
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+            save: async (card) => {
+                const db = await CustomCardDB.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('cards', 'readwrite');
+                    tx.objectStore('cards').put(card);
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            },
+            getAll: async () => {
+                const db = await CustomCardDB.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('cards', 'readonly');
+                    const req = tx.objectStore('cards').getAll();
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+            },
+            delete: async (id) => {
+                const db = await CustomCardDB.init();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('cards', 'readwrite');
+                    tx.objectStore('cards').delete(id);
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
             }
         };
 
@@ -525,6 +630,56 @@
         };
 
 
+
+        const NotesView = ({ cards, notes, onNav }) => {
+            const [expandedContext, setExpandedContext] = useState([]);
+
+            const notesList = Object.entries(notes).map(([id, content]) => {
+                const card = cards.find(c => String(c.id) === String(id));
+                return { id, content, card };
+            }).filter(n => n.card);
+
+            const toggleContext = (id) => {
+                if (expandedContext.includes(id)) setExpandedContext(expandedContext.filter(i => i !== id));
+                else setExpandedContext([...expandedContext, id]);
+            };
+
+            return (
+                <div className="flex flex-col h-screen bg-slate-50 dark:bg-zinc-950">
+                    <div className="p-4 bg-white dark:bg-zinc-950 border-b border-slate-200 dark:border-zinc-800 flex justify-between items-center sticky top-0 z-10">
+                        <h2 className="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2"><Icons.Book className="text-indigo-500" /> My Notebook</h2>
+                        <button onClick={() => onNav('home')} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400"><Icons.X /></button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {notesList.length === 0 && <div className="text-center text-slate-400 mt-20">No notes yet. Add notes via the Microphone/Edit button in Play Mode!</div>}
+                        {notesList.map(n => (
+                            <div key={n.id} className="bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-zinc-800">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="font-bold text-slate-700 dark:text-zinc-300">{n.card.title}</h3>
+                                    <button onClick={() => toggleContext(n.id)} className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 hover:text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded transition-colors">
+                                        {expandedContext.includes(n.id) ? 'Hide Context' : 'Show Context'}
+                                    </button>
+                                </div>
+                                <div className="bg-yellow-50 dark:bg-yellow-900/10 p-3 rounded-lg text-sm text-slate-600 dark:text-yellow-100/80 mb-3 whitespace-pre-wrap">{n.content}</div>
+
+                                {expandedContext.includes(n.id) && (
+                                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-zinc-800 space-y-4">
+                                        <div>
+                                            <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1">Question</div>
+                                            <div className="text-xs text-slate-600 dark:text-zinc-400"><Markdown content={n.card.content} /></div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1">Answer</div>
+                                            <div className="text-xs text-slate-600 dark:text-zinc-400"><Markdown content={n.card.explanation} /></div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
 
         const VoiceSelect = ({ voices, currentVoice, onChange }) => {
             const [isOpen, setIsOpen] = useState(false);
@@ -863,11 +1018,41 @@
 
             useEffect(() => {
                 // 1. Load Data
-                // 1. Load Data
                 const externalData = (typeof SEED_DATA !== 'undefined') ? SEED_DATA : [];
-                const savedCustom = JSON.parse(localStorage.getItem('ss_custom_cards') || '[]');
-                setCustomCards(savedCustom);
-                setCards([...externalData, ...savedCustom]);
+
+                // Async Load & Migrate Custom Cards
+                const loadCustom = async () => {
+                    try {
+                        let dbCards = await CustomCardDB.getAll();
+
+                        // Migration Check
+                        const legacy = localStorage.getItem('ss_custom_cards');
+                        if (legacy) {
+                            const parsed = JSON.parse(legacy);
+                            if (parsed.length > 0) {
+                                for (const c of parsed) {
+                                    // Avoid duplicates if already migrated partially
+                                    if (!dbCards.find(d => d.id === c.id)) {
+                                        await CustomCardDB.save(c);
+                                        dbCards.push(c);
+                                    }
+                                }
+                            }
+                            localStorage.removeItem('ss_custom_cards');
+                        }
+
+                        setCustomCards(dbCards);
+                        setCards(prev => {
+                            // Merge ensuring no loss of external data, avoid duplicates if called multiple times (though useEffect is []
+                            return [...externalData, ...dbCards];
+                        });
+                    } catch (e) {
+                        console.error("Custom Card Load Error", e);
+                        // Fallback to allow app to run even if DB fails
+                        setCards([...externalData]);
+                    }
+                };
+                loadCustom();
 
                 // 2. Load Persisted State
 
@@ -1028,11 +1213,13 @@
                 else updateBookmarks([...bookmarks, id]);
             };
 
-            const addCustomCard = (card) => {
+
+
+            const addCustomCard = async (card) => {
+                await CustomCardDB.save(card);
                 const newCustom = [...customCards, card];
                 setCustomCards(newCustom);
-                setCards([...cards, card]);
-                localStorage.setItem('ss_custom_cards', JSON.stringify(newCustom));
+                setCards(prev => [...prev, card]);
                 setShowCreator(false);
                 showToast("Card Created!");
             };
@@ -1154,6 +1341,7 @@
                 switch (view) {
                     case 'home': return <HomeView cards={cards} history={history} bookmarks={bookmarks} streak={streak} wrongQueue={wrongQueue} darkMode={darkMode} toggleDarkMode={toggleDarkMode} onStart={startSession} onNav={setView} xp={xp} level={level} levelProgress={levelProgress} setShowSettings={setShowSettings} setShowCreator={setShowCreator} srsData={srsData} updateStreak={updateStreak} />;
                     case 'browser': return <BrowserView cards={cards} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onNav={setView} history={history} />;
+                    case 'notes': return <NotesView cards={cards} notes={notes} onNav={setView} />;
                     case 'play': return <PlayView deck={activeDeck} bookmarks={bookmarks} onToggleBookmark={toggleBookmark} onFinish={handleSessionComplete} onNav={setView} history={history} showToast={showToast} addXp={addXp} onSrsReview={handleSrsReview} notes={notes} onUpdateNote={updateNotes} useAIStudio={useAIStudio} voiceName={selectedVoice} srsSettings={srsSettings} />;
                     default: return <HomeView />;
                 }
@@ -1398,6 +1586,7 @@
                             <div className="flex gap-2">
                                 <button onClick={toggleDarkMode} className="p-2 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 rounded-full hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors">{darkMode ? <Icons.Sun /> : <Icons.Moon />}</button>
                                 <button onClick={() => updateStreak() || setShowSettings(true)} className="p-2 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 rounded-full hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors"><Icons.Wrench /></button>
+                                <button onClick={() => onNav('notes')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"><Icons.Book /></button>
                                 <button onClick={() => onNav('browser')} className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"><Icons.Search /></button>
                             </div>
                         </div>
@@ -1539,8 +1728,8 @@
             const [recordedIds, setRecordedIds] = useState([]);
 
             useEffect(() => {
-                AudioDB.getAll().then(recs => {
-                    setRecordedIds(recs.map(r => r.cardId));
+                AudioDB.getKeys().then(keys => {
+                    setRecordedIds(keys);
                 });
             }, []);
 
@@ -1613,8 +1802,8 @@
                                         <button onClick={() => onToggleBookmark(c.id)} className={bookmarks.includes(c.id) ? "text-yellow-400" : "text-slate-300 dark:text-zinc-600"}><Icons.Bookmark size={18} fill="currentColor" /></button>
                                     </div>
                                 </div>
-                                <h3 className="font-bold text-slate-800 dark:text-white text-sm mb-2">{c.title}</h3>
-                                <div className={`text-xs text-slate-500 dark:text-zinc-400 ${expandedIds.includes(c.id) ? '' : 'line-clamp-2'}`}><Markdown content={c.content} /></div>
+                                <h3 className="font-bold text-slate-800 dark:text-white text-sm mb-2"><HighlightText text={c.title} term={search} /></h3>
+                                <div className={`text-xs text-slate-500 dark:text-zinc-400 ${expandedIds.includes(c.id) ? '' : 'line-clamp-2'}`}><Markdown content={c.content} searchTerm={search} /></div>
                                 {expandedIds.includes(c.id) && (
                                     <div className="mt-4 pt-4 border-t border-slate-100 dark:border-zinc-800">
                                         <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Explanation</div>
@@ -1649,6 +1838,7 @@
             const [audioUrl, setAudioUrl] = useState(null);
             const mediaRecorder = useRef(null);
             const audioChunks = useRef([]);
+            const isProcessing = useRef(false);
 
             const card = deck[index] || {};
 
@@ -1779,6 +1969,48 @@
                 }
             };
 
+            // Hands-Free Voice Commands
+            useEffect(() => {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!commuterMode || !SpeechRecognition) return;
+
+                const recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onresult = (event) => {
+                    const last = event.results.length - 1;
+                    const command = event.results[last][0].transcript.trim().toLowerCase();
+
+                    // Simple fuzzy matching
+                    if (command.includes('flip') || command.includes('answer') || command.includes('reveal')) {
+                        setIsFlipped(true);
+                        showToast("🎤 Flip");
+                    } else if (command.includes('next') || command.includes('good') || command.includes('pass') || command.includes('easy')) {
+                        handleSrs(2); // Treat as Good/Next
+                        showToast("🎤 Next");
+                    } else if (command.includes('hard') || command.includes('again') || command.includes('difficult')) {
+                        handleSrs(1);
+                        showToast("🎤 Hard");
+                    }
+                };
+
+                recognition.onerror = (e) => {
+                    console.log("Recognition error", e);
+                    // Silently fail or retry? Browsers are strict.
+                };
+
+                try {
+                    recognition.start();
+                    showToast("🎤 Voice Control Active");
+                } catch (e) { console.error("Rec start failed", e); }
+
+                return () => {
+                    try { recognition.stop(); } catch (e) { }
+                };
+            }, [commuterMode, index]); // Restart on card change to ensure fresh state closure
+
             const isLast = index === deck.length - 1;
             const hasLearned = history.includes(card?.id) || localLearned.includes(card?.id);
 
@@ -1838,6 +2070,9 @@
             };
 
             const handleSrs = (rating) => {
+                if (isProcessing.current) return;
+                isProcessing.current = true;
+
                 if (onSrsReview) onSrsReview(card.id, rating);
 
                 const dir = rating >= 2 ? 'right' : 'left';
@@ -1854,16 +2089,24 @@
                     else {
                         setIndex(index + 1);
                         setCardAnim('card-enter-bottom');
-                        setTimeout(() => setCardAnim(''), 200);
+                        setTimeout(() => {
+                            setCardAnim('');
+                            isProcessing.current = false;
+                        }, 200);
                     }
+                    if (isLast) isProcessing.current = false;
                 }, 200);
             };
 
             useEffect(() => {
                 const handleKey = (e) => {
+                    if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
                     if (e.key === 'ArrowRight') handleSrs(3);
                     if (e.key === 'ArrowLeft') handleSrs(1);
-                    if (e.key === ' ') setIsFlipped(p => !p);
+                    if (e.key === ' ') {
+                        e.preventDefault();
+                        setIsFlipped(p => !p);
+                    }
                 };
                 window.addEventListener('keydown', handleKey);
                 return () => window.removeEventListener('keydown', handleKey);
@@ -1886,6 +2129,9 @@
             };
 
             const nextCard = () => {
+                if (isProcessing.current) return;
+                isProcessing.current = true;
+
                 triggerAnim('next');
                 addXp(10);
                 showToast("+10 XP");
@@ -1897,12 +2143,19 @@
                     else {
                         setIndex(index + 1);
                         setCardAnim('card-enter-right');
-                        setTimeout(() => setCardAnim(''), 200);
+                        setTimeout(() => {
+                            setCardAnim('');
+                            isProcessing.current = false;
+                        }, 200);
                     }
+                    if (isLast) isProcessing.current = false;
                 }, 200);
             };
 
             const prevCard = () => {
+                if (isProcessing.current) return;
+                // No strict debounce needed for prev since no rating logic, but good for anim
+                // Let's keep it simple for prev
                 triggerAnim('prev');
                 if (index > 0) {
                     setCardAnim('card-exit-right');
