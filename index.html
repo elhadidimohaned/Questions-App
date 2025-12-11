@@ -850,7 +850,75 @@
             );
         };
 
-        const SettingsModal = ({ isOpen, onClose, onExport, onImport, useAIStudio, onToggleAIStudio, voices, currentVoice, onVoiceChange, srsSettings, onSrsChange, autoResume, onToggleAutoResume }) => {
+        const TimePicker = ({ value, onChange }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const containerRef = useRef(null);
+
+            // value is "HH:MM" 24h
+            const [hours, minutes] = value ? value.split(':').map(Number) : [9, 0];
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            const displayMinutes = String(minutes).padStart(2, '0');
+
+            useEffect(() => {
+                const handleClickOutside = (event) => {
+                    if (containerRef.current && !containerRef.current.contains(event.target)) setIsOpen(false);
+                };
+                if (isOpen) document.addEventListener('click', handleClickOutside, true);
+                return () => document.removeEventListener('click', handleClickOutside, true);
+            }, [isOpen]);
+
+            // Ensure scroll into view when opened
+            useEffect(() => {
+                if (isOpen && containerRef.current) {
+                    const activeBtns = containerRef.current.querySelectorAll('.bg-indigo-600');
+                    activeBtns.forEach(btn => btn.scrollIntoView({ block: 'center' }));
+                }
+            }, [isOpen]);
+
+            const updateTime = (h, m, ap) => {
+                let newH = h;
+                if (ap === 'PM' && h < 12) newH += 12;
+                if (ap === 'AM' && h === 12) newH = 0;
+                onChange(`${String(newH).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+            };
+
+            return (
+                <div className="relative" ref={containerRef}>
+                    <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-zinc-800 rounded-lg border border-transparent focus:border-indigo-500 transition-all hover:bg-slate-100 dark:hover:bg-zinc-700">
+                        <span className="text-lg font-bold font-mono text-slate-700 dark:text-white">
+                            {String(displayHours).padStart(2, '0')}<span className="mx-0.5 opacity-50">:</span>{displayMinutes}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-1.5 py-0.5 rounded uppercase">{ampm}</span>
+                    </button>
+
+                    {isOpen && (
+                        <div className="absolute top-full left-0 mt-2 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-slate-100 dark:border-zinc-800 z-50 p-1 flex gap-1 animate-in fade-in zoom-in-95 duration-100 select-none">
+                            {/* Hours */}
+                            <div className="h-48 overflow-y-auto w-12 flex flex-col gap-1 text-center scrollbar-hide">
+                                {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(h => (
+                                    <button key={h} onClick={() => updateTime(h, minutes, ampm)} className={`p-2 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 text-sm font-bold transition-colors ${h === displayHours ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'text-slate-600 dark:text-zinc-400'}`}>{String(h).padStart(2, '0')}</button>
+                                ))}
+                            </div>
+                            {/* Min */}
+                            <div className="h-48 overflow-y-auto w-12 flex flex-col gap-1 text-center border-l border-slate-100 dark:border-zinc-800 pl-1 scrollbar-hide">
+                                {Array.from({ length: 60 }, (_, i) => i).map(m => (
+                                    <button key={m} onClick={() => updateTime(displayHours, m, ampm)} className={`p-2 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 text-sm font-bold transition-colors ${m === minutes ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'text-slate-600 dark:text-zinc-400'}`}>{String(m).padStart(2, '0')}</button>
+                                ))}
+                            </div>
+                            {/* AM/PM */}
+                            <div className="flex flex-col gap-1 border-l border-slate-100 dark:border-zinc-800 pl-1">
+                                {['AM', 'PM'].map(ap => (
+                                    <button key={ap} onClick={() => updateTime(displayHours, minutes, ap)} className={`p-2 rounded hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs font-bold transition-colors ${ap === ampm ? 'bg-orange-500 text-white' : 'text-slate-600 dark:text-zinc-400'}`}>{ap}</button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const SettingsModal = ({ isOpen, onClose, onExport, onImport, useAIStudio, onToggleAIStudio, voices, currentVoice, onVoiceChange, srsSettings, onSrsChange, autoResume, onToggleAutoResume, notificationSettings, onNotificationChange }) => {
             useEffect(() => {
                 if (isOpen) document.body.style.overflow = 'hidden';
                 return () => document.body.style.overflow = 'unset';
@@ -859,6 +927,33 @@
             if (!isOpen) return null;
 
             const srsLabels = { hard: 'Hard (Left)', good: 'Good', easy: 'Easy (Right)' };
+
+            const toggleNotifications = () => {
+                if (!notificationSettings.enabled) {
+                    if (Notification.permission !== 'granted') {
+                        Notification.requestPermission().then(p => {
+                            if (p === 'granted') onNotificationChange({ ...notificationSettings, enabled: true });
+                            else alert("Notifications blocked. Please enable them in your browser settings.");
+                        });
+                    } else {
+                        onNotificationChange({ ...notificationSettings, enabled: true });
+                    }
+                } else {
+                    onNotificationChange({ ...notificationSettings, enabled: false });
+                }
+            };
+
+            const testNotification = () => {
+                const msg = "This is a test notification! 🔔";
+                if (Notification.permission === 'granted') {
+                    new Notification("Senior Swipe", { body: msg });
+                } else {
+                    Notification.requestPermission().then(p => {
+                        if (p === 'granted') new Notification("Senior Swipe", { body: msg });
+                        else alert("Permission denied. Check browser settings.");
+                    });
+                }
+            };
 
             return (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
@@ -891,6 +986,74 @@
                                             <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${useAIStudio ? 'translate-x-6' : 'translate-x-0'}`} />
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Notifications</label>
+                                <div className="p-4 bg-slate-50 dark:bg-zinc-800 rounded-xl space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Icons.Alert size={16} className="text-slate-400" />
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-slate-700 dark:text-zinc-300">Daily Reminders</span>
+                                                <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span> Requires open tab</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={toggleNotifications}
+                                            className={`w-12 h-6 rounded-full p-1 transition-colors ${notificationSettings.enabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                                        >
+                                            <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${notificationSettings.enabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                                        </button>
+                                    </div>
+
+                                    {notificationSettings && notificationSettings.enabled && (
+                                        <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-zinc-700 animate-in slide-in-from-top-2">
+                                            <div>
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-2">Schedule Days</div>
+                                                <div className="flex justify-between bg-white dark:bg-zinc-900 p-2 rounded-xl border border-slate-100 dark:border-zinc-800">
+                                                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => {
+                                                                const newDays = notificationSettings.days.includes(i) ? notificationSettings.days.filter(x => x !== i) : [...notificationSettings.days, i];
+                                                                onNotificationChange({ ...notificationSettings, days: newDays });
+                                                            }}
+                                                            className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${notificationSettings.days.includes(i) ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-800'}`}
+                                                        >
+                                                            {d}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase">Alert Times</div>
+                                                    <div className="flex gap-2">
+                                                        <button className="text-[10px] bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 px-2 py-1 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors" onClick={testNotification}>Test 🔔</button>
+                                                        <button className="text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded-lg font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors" onClick={() => onNotificationChange({ ...notificationSettings, times: [...notificationSettings.times, "09:00"] })}>+ Add Time</button>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {notificationSettings.times.map((t, i) => (
+                                                        <div key={i} className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl p-1 pr-2 shadow-sm">
+                                                            <TimePicker
+                                                                value={t}
+                                                                onChange={val => {
+                                                                    const newTimes = [...notificationSettings.times];
+                                                                    newTimes[i] = val;
+                                                                    onNotificationChange({ ...notificationSettings, times: newTimes });
+                                                                }}
+                                                            />
+                                                            <button onClick={() => onNotificationChange({ ...notificationSettings, times: notificationSettings.times.filter((_, idx) => idx !== i) })} className="text-slate-400 hover:text-red-500 transition-colors bg-slate-100 dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-red-900/20 p-1.5 rounded-lg"><Icons.X size={14} /></button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -997,6 +1160,21 @@
             );
         };
 
+        const NOTIFICATION_TEMPLATES = [
+            "Time to code! 💻", "Don't break the streak! 🔥", "Senior Dev salary is waiting... 💰", "One card closer to mastery 🚀",
+            "Your future self will thank you 🙏", "Code is temporary, knowledge is power 🧠", "Review time! ⏰", "Level up your skills ⬆️",
+            "Interview coming up? 🎤", "Just 5 minutes? ⏳", "A senior dev reviews daily 📅", "Stay sharp! 🔪", "Cracking the coding interview? 📖",
+            "Git commit -m 'progress' 💾", "Console.log('success') ✅", "404: Excuses not found 🚫", "200: OK to study 👌", "While (alive) { study(); } 🔄",
+            "Refactor your brain 🧠", "Optimization time ⚡", "Don't let your skills rot 🧟", "Consistency is key 🔑", "Building the dream 🏗️",
+            "Debug your knowledge 🐞", "System Design awaits 📐", "Algorithm practice time 🧮", "Data Structures? Yes please. 📊",
+            "Big O(1) Access Time ⚡", "Frontend, Backend, You-end. 🫵", "Full Stack Mastery 🥞", "Deploying knowledge... 🚀",
+            "Hot Reload your brain 🔥", "Time to merge knowledge 🔀", "Pull Request: Approved ✅", "Reviewing... 🧐",
+            "Compiling... ⚙️", "Runtime Error: Lack of coffee ☕", "Stack Overflow? Not today. 🛡️", "Documentation is good, memory is better 📚",
+            "Clean Code, Clean Mind 🧹", "Refactoring legacy knowledge 🏛️", "Technical Debt repayment time 💸", "Sprint Planning: Study Session 🏃",
+            "Standup meeting with yourself 🧍", "Blockers? None. 🚧", "Feature Flag: Smart 🚩", "CI/CD: Continuous Improvement 🔄",
+            "Dockerize your skills 🐳", "Kubernetes of knowledge ☸️", "Scalable Learning 📈", "High Availability Brain 🧠", "Load Balancing study time ⚖️"
+        ];
+
         // --- MAIN APP ---
         function App() {
             const [autoResume, setAutoResume] = useState(() => localStorage.getItem('ss_auto_resume') === 'true');
@@ -1051,7 +1229,51 @@
                 hard: { val: 0.5, unit: 'd' },
                 good: { val: 1, unit: 'd' },
                 easy: { val: 4, unit: 'd' }
+
             });
+            const [notificationSettings, setNotificationSettings] = useState(() => {
+                const saved = localStorage.getItem('ss_notifications');
+                return saved ? JSON.parse(saved) : { enabled: false, days: [0, 1, 2, 3, 4, 5, 6], times: ["09:00"], lastNotified: 0 };
+            });
+
+            // Notification Scheduler
+            useEffect(() => {
+                if (!notificationSettings.enabled) return;
+
+                const check = () => {
+                    const now = new Date();
+                    const day = now.getDay(); // 0-6
+                    const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+                    if (notificationSettings.days.includes(day) && notificationSettings.times.includes(time)) {
+                        // Check debounce (prevent multi-firing in same minute if interval drifts, though set to 60s)
+                        const latence = Date.now() - notificationSettings.lastNotified;
+                        if (latence > 60000) {
+                            // Trigger
+                            const msg = NOTIFICATION_TEMPLATES[Math.floor(Math.random() * NOTIFICATION_TEMPLATES.length)];
+                            showToast("🔔 " + msg); // Visible confirmation inside app
+
+                            if (Notification.permission === 'granted') {
+                                new Notification("Senior Swipe", { body: msg, icon: 'icon.png' });
+                            }
+                            // Update lastNotified to avoid repeat
+                            setNotificationSettings(prev => {
+                                const next = { ...prev, lastNotified: Date.now() };
+                                localStorage.setItem('ss_notifications', JSON.stringify(next));
+                                return next;
+                            });
+                        }
+                    }
+                };
+
+                const interval = setInterval(check, 10000); // Check every 10s closely to catch the minute
+                return () => clearInterval(interval);
+            }, [notificationSettings]);
+
+            const updateNotifications = (newSettings) => {
+                setNotificationSettings(newSettings);
+                localStorage.setItem('ss_notifications', JSON.stringify(newSettings));
+            };
 
             useEffect(() => {
                 const loadVoices = () => {
@@ -1479,6 +1701,8 @@
                         onSrsChange={updateSrsSettings}
                         autoResume={autoResume}
                         onToggleAutoResume={toggleAutoResume}
+                        notificationSettings={notificationSettings}
+                        onNotificationChange={updateNotifications}
                     />
                     {showCreator && <CardCreatorView categories={[...new Set(cards.map(c => c.category))]} onClose={() => { setShowCreator(false); setEditingCard(null); }} onSave={editingCard ? updateCard : addCustomCard} initialData={editingCard} />}
 
