@@ -918,7 +918,25 @@
             );
         };
 
-        const SettingsModal = ({ isOpen, onClose, onExport, onImport, useAIStudio, onToggleAIStudio, voices, currentVoice, onVoiceChange, srsSettings, onSrsChange, autoResume, onToggleAutoResume, notificationSettings, onNotificationChange }) => {
+        const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmText = "Confirm", confirmColor = "bg-indigo-600", cancelText = "Cancel" }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200 backdrop-blur-sm" onClick={onCancel}>
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-zinc-800" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">{title}</h3>
+                        <p className="text-sm text-slate-600 dark:text-zinc-400 mb-6 leading-relaxed whitespace-pre-line">{message}</p>
+                        <div className="flex gap-3">
+                            {onCancel && <button onClick={onCancel} className="flex-1 py-3 rounded-xl font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">{cancelText}</button>}
+                            <button onClick={onConfirm} className={`flex-1 py-3 rounded-xl font-bold text-white shadow-lg shadow-indigo-500/20 transition-transform active:scale-95 ${confirmColor}`}>{confirmText}</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SettingsModal = ({ isOpen, onClose, onExport, onImport, useAIStudio, onToggleAIStudio, voices, currentVoice, onVoiceChange, srsSettings, onSrsChange, autoResume, onToggleAutoResume, notificationSettings, onNotificationChange, onReset }) => {
+            const [showResetConfirm, setShowResetConfirm] = useState(false);
+
             useEffect(() => {
                 if (isOpen) document.body.style.overflow = 'hidden';
                 return () => document.body.style.overflow = 'unset';
@@ -1098,12 +1116,13 @@
                             <div className="pt-4 border-t border-slate-100 dark:border-zinc-800">
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Data Management</label>
                                 <div className="flex gap-2">
-                                    <button onClick={onExport} className="flex-1 p-3 bg-slate-100 dark:bg-zinc-800 rounded-xl text-sm font-bold text-slate-600 dark:text-zinc-300">Backup Data</button>
-                                    <label className="flex-1 cursor-pointer p-3 bg-indigo-600 rounded-xl text-sm font-bold text-white text-center hover:bg-indigo-700">
-                                        Restore Data
+                                    <button onClick={onExport} className="flex-1 p-3 bg-slate-100 dark:bg-zinc-800 rounded-xl text-sm font-bold text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors">Backup</button>
+                                    <label className="flex-1 cursor-pointer p-3 bg-indigo-600 rounded-xl text-sm font-bold text-white text-center hover:bg-indigo-700 transition-colors">
+                                        Restore
                                         <input type="file" className="hidden" accept=".json" onChange={onImport} />
                                     </label>
                                 </div>
+                                <button onClick={() => setShowResetConfirm(true)} className="w-full mt-3 p-3 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors border border-transparent hover:border-red-200 dark:hover:border-red-900/50">Reset App Data</button>
                             </div>
                         </div>
 
@@ -1111,6 +1130,16 @@
                         <div className="p-6 border-t border-slate-100 dark:border-zinc-800 shrink-0 bg-white dark:bg-zinc-900">
                             <button onClick={onClose} className="w-full py-3 bg-slate-100 dark:bg-zinc-800 rounded-xl text-slate-600 dark:text-zinc-300 font-bold hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors">Close</button>
                         </div>
+
+                        <ConfirmDialog
+                            isOpen={showResetConfirm}
+                            title="Reset Application?"
+                            message={"This will delete ALL progress, cards, streaks, and settings.\n\nThis action cannot be undone."}
+                            onConfirm={() => { setShowResetConfirm(false); onReset(); }}
+                            onCancel={() => setShowResetConfirm(false)}
+                            confirmText="Reset Everything"
+                            confirmColor="bg-red-500 hover:bg-red-600"
+                        />
                     </div>
                 </div>
             );
@@ -1204,6 +1233,7 @@
             const [showSettings, setShowSettings] = useState(false);
             const [showCreator, setShowCreator] = useState(false);
             const [editingCard, setEditingCard] = useState(null);
+            const [restoreSuccess, setRestoreSuccess] = useState(false); // New State for Custom Restore Modal
 
             // Leveling Logic
             const level = Math.floor(Math.sqrt(xp / 25)) + 1;
@@ -1512,7 +1542,10 @@
             };
 
             const exportData = () => {
-                const data = { history, bookmarks, xp, streak, customCards, srsData, wrongQueue };
+                const data = {
+                    history, bookmarks, xp, streak, customCards, srsData, wrongQueue, notes,
+                    settings: { darkMode, srsSettings, notificationSettings, useAIStudio, voice: selectedVoice, autoResume }
+                };
                 const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
@@ -1523,29 +1556,60 @@
             const importData = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    try {
-                        const data = JSON.parse(ev.target.result);
-                        if (data.history) updateHistory(data.history);
-                        if (data.bookmarks) updateBookmarks(data.bookmarks);
-                        if (data.xp) { setXp(data.xp); localStorage.setItem('ss_xp', data.xp); }
-                        if (data.streak) { setStreak(data.streak); localStorage.setItem('ss_streak', JSON.stringify(data.streak)); }
-                        if (data.customCards) {
-                            setCustomCards(data.customCards);
-                            localStorage.setItem('ss_custom_cards', JSON.stringify(data.customCards));
-                            setCards([...cards, ...data.customCards]); // Note: This might duplicate if existing cards are not cleared, but SEED_DATA is constant.
-                            setTimeout(() => window.location.reload(), 500);
+
+                const input = e.target;
+
+                // Decouple from UI thread and ensure input clearing works across browsers
+                setTimeout(() => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        try {
+                            const data = JSON.parse(ev.target.result);
+                            if (!data) throw new Error("File appears empty");
+
+                            // 1. Direct LocalStorage Writes (No React State Updates)
+                            const simpleKeys = ['history', 'bookmarks', 'xp', 'streak', 'wrongQueue', 'srsData', 'notes'];
+                            simpleKeys.forEach(k => {
+                                if (data[k]) localStorage.setItem('ss_' + k, typeof data[k] === 'object' ? JSON.stringify(data[k]) : data[k]);
+                            });
+                            // Special case for srs_data name mismatch in simpleKeys logic if any (srsData->ss_srs_data map matches)
+
+                            // 2. Settings
+                            if (data.settings) {
+                                const s = data.settings;
+                                if (s.darkMode !== undefined) localStorage.setItem('ss_dark', s.darkMode);
+                                if (s.srsSettings) localStorage.setItem('ss_srs_settings', JSON.stringify(s.srsSettings));
+                                if (s.notificationSettings) localStorage.setItem('ss_notifications', JSON.stringify(s.notificationSettings));
+                                if (s.useAIStudio !== undefined) localStorage.setItem('ss_use_ai_studio', s.useAIStudio);
+                                if (s.voice) localStorage.setItem('ss_voice', s.voice);
+                                if (s.autoResume !== undefined) localStorage.setItem('ss_auto_resume', s.autoResume);
+                            }
+
+                            // 3. Custom Cards
+                            if (data.customCards) localStorage.setItem('ss_custom_cards', JSON.stringify(data.customCards));
+
+                            // 4. Success UI
+                            setRestoreSuccess(true);
+                            setShowSettings(false);
+
+                        } catch (err) {
+                            alert("Restore Failed: " + err.message);
+                            console.error(err);
+                        } finally {
+                            // Clear input AFTER reading is done
+                            input.value = '';
                         }
-                        if (data.srsData) { setSrsData(data.srsData); localStorage.setItem('ss_srs_data', JSON.stringify(data.srsData)); }
-                        if (data.wrongQueue) updateWrongQueue(data.wrongQueue);
-                        showToast("Data Restored!");
-                        setShowSettings(false);
-                    } catch (err) {
-                        showToast("Invalid JSON file");
-                    }
-                };
-                reader.readAsText(file);
+                    };
+                    reader.readAsText(file);
+                }, 50);
+            };
+
+            const resetApp = () => {
+                // Confirmation handled by Modal, this is final execution
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('ss_')) localStorage.removeItem(key);
+                });
+                window.location.reload();
             };
 
 
@@ -1703,8 +1767,19 @@
                         onToggleAutoResume={toggleAutoResume}
                         notificationSettings={notificationSettings}
                         onNotificationChange={updateNotifications}
+                        onReset={resetApp}
                     />
                     {showCreator && <CardCreatorView categories={[...new Set(cards.map(c => c.category))]} onClose={() => { setShowCreator(false); setEditingCard(null); }} onSave={editingCard ? updateCard : addCustomCard} initialData={editingCard} />}
+
+                    <ConfirmDialog
+                        isOpen={restoreSuccess}
+                        title="Restore Successful! ✨"
+                        message="Your data has been loaded successfully. The app needs to reload to apply the changes."
+                        onConfirm={() => window.location.reload()}
+                        confirmText="Reload App"
+                        confirmColor="bg-green-600 hover:bg-green-700"
+                        onCancel={null} // Force reload by removing cancel option
+                    />
 
                     {renderView()}
                     {toast && <Toast message={toast} />}
